@@ -1,13 +1,13 @@
 --[[
     Auto Wall Hop (Clean Version)
-    - Câmera 90° esquerda correta
-    - Botão FIXO (sem arrastar)
-    - Posição: canto superior esquerdo (abaixo do chat)
+    - Câmera 45° esquerda
+    - Botão colado no chat (DPI friendly)
 ]]
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
+local GuiService = game:GetService("GuiService")
 
 -- --- UI ---
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -20,8 +20,9 @@ ScreenGui.Parent = PlayerGui
 local TextButton = Instance.new("TextButton")
 TextButton.Size = UDim2.new(0, 140, 0, 45)
 
--- posição fixa (canto superior esquerdo, abaixo do chat)
-TextButton.Position = UDim2.new(0, 10, 0, 80)
+-- POSIÇÃO COLADA NO CHAT (funciona em qualquer DPI)
+local inset = GuiService:GetGuiInset()
+TextButton.Position = UDim2.new(0, 10, 0, inset.Y + 2)
 
 TextButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 TextButton.Text = "Wall Hop Off"
@@ -41,7 +42,7 @@ local lastFlickTime = 0
 
 local Camera = workspace.CurrentCamera
 
--- --- FLICK CORRETO (90° ESQUERDA DA TELA) ---
+-- --- FLICK 45° ESQUERDA ---
 local function performVideoFlick()
     if isFlicking then return end
     isFlicking = true
@@ -60,9 +61,9 @@ local function performVideoFlick()
     -- impulso
     hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
 
-    -- rotação RELATIVA correta (esquerda da tela)
+    -- rotação 45° esquerda
     local startCFrame = Camera.CFrame
-    Camera.CFrame = startCFrame * CFrame.Angles(0, math.rad(-90), 0)
+    Camera.CFrame = startCFrame * CFrame.Angles(0, math.rad(-45), 0)
 
     task.wait(0.06)
 
@@ -112,4 +113,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
-print("Auto Wall Hop (Clean) Loaded!")
+print("Auto Wall Hop (45° + Chat Aligned) Loaded!")
