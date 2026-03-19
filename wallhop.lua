@@ -64,22 +64,22 @@ local function performVideoFlick()
     -- boost (mantido igual)
     hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
 
-    -- flick modificado (rápido + volta acelerada leve)
+    -- flick ajustado (mais lento e visível)
     local startCFrame = Camera.CFrame
     local targetCFrame = startCFrame * CFrame.Angles(0, math.rad(45), 0)
 
     -- ida rápida
     Camera.CFrame = targetCFrame
 
-    -- micro pausa
-    task.wait(0.015)
+    -- segura
+    task.wait(0.02)
 
-    -- volta com aceleração leve
-    local steps = 4
+    -- volta com aceleração
+    local steps = 6
     for i = 1, steps do
         local alpha = (i / steps) ^ 2
         Camera.CFrame = targetCFrame:Lerp(startCFrame, alpha)
-        task.wait(0.004)
+        task.wait(0.007)
     end
 
     isFlicking = false
