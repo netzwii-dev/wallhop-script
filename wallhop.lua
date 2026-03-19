@@ -1,8 +1,8 @@
 --[[
-    Auto Wall Hop (FINAL TRYHARD)
-    - 45° direita (invertido proposital)
-    - retorno MUITO rápido
-    - botão +60px mais alto
+    Auto Wall Hop (FINAL AJUSTADO)
+    - 45° direita
+    - flick levemente mais visível
+    - botão +40px direita
 ]]
 
 local Players = game:GetService("Players")
@@ -31,10 +31,10 @@ local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 10)
 UICorner.Parent = TextButton
 
--- POSIÇÃO (+60px pra cima)
+-- POSIÇÃO (direita +40px, altura mantida)
 RunService.RenderStepped:Connect(function()
     local inset = GuiService:GetGuiInset()
-    TextButton.Position = UDim2.new(0, 10, 0, inset.Y - 58)
+    TextButton.Position = UDim2.new(0, 50, 0, inset.Y - 58)
 end)
 
 -- --- VARIÁVEIS ---
@@ -44,7 +44,7 @@ local lastFlickTime = 0
 
 local Camera = workspace.CurrentCamera
 
--- --- FLICK TRYHARD (RÁPIDO + DIREITA) ---
+-- --- FLICK AJUSTADO (MAIS VISÍVEL) ---
 local function performVideoFlick()
     if isFlicking then return end
     isFlicking = true
@@ -65,14 +65,13 @@ local function performVideoFlick()
 
     local startCFrame = Camera.CFrame
 
-    -- 45° DIREITA (invertido)
-    local rotation = CFrame.Angles(0, math.rad(45), 0)
-    Camera.CFrame = startCFrame * rotation
+    -- rotação 45°
+    Camera.CFrame = startCFrame * CFrame.Angles(0, math.rad(45), 0)
 
-    -- tempo mínimo (flick seco)
-    task.wait(0.02)
+    -- um pouco mais lento (mais visível)
+    task.wait(0.045)
 
-    -- VOLTA MAIS RÁPIDA AINDA
+    -- volta rápida ainda
     Camera.CFrame = startCFrame
 
     isFlicking = false
@@ -100,7 +99,7 @@ RunService.Heartbeat:Connect(function()
 
     if result and result.Instance and result.Instance.CanCollide then
         if lastHitInstance and lastHitInstance ~= result.Instance then
-            if tick() - lastFlickTime > 0.035 then
+            if tick() - lastFlickTime > 0.04 then
                 lastFlickTime = tick()
                 performVideoFlick()
             end
@@ -119,4 +118,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
-print("Auto Wall Hop (FINAL TRYHARD TUNED) Loaded!")
+print("Auto Wall Hop (VISUAL TRYHARD) Loaded!")
