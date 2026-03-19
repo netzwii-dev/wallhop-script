@@ -1,8 +1,8 @@
 --[[
-    Auto Wall Hop (FINAL AJUSTADO)
-    - 45° direita
-    - flick levemente mais visível
-    - botão +40px direita
+    Auto Wall Hop (LEGIT VERSION)
+    - mantém altura original
+    - flick clean e levemente mais rápido na volta
+    - botão ajustado
 ]]
 
 local Players = game:GetService("Players")
@@ -31,10 +31,10 @@ local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 10)
 UICorner.Parent = TextButton
 
--- POSIÇÃO (direita +40px, altura mantida)
+-- POSIÇÃO (mais 40px pra direita)
 RunService.RenderStepped:Connect(function()
     local inset = GuiService:GetGuiInset()
-    TextButton.Position = UDim2.new(0, 50, 0, inset.Y - 58)
+    TextButton.Position = UDim2.new(0, 90, 0, inset.Y - 58)
 end)
 
 -- --- VARIÁVEIS ---
@@ -44,7 +44,7 @@ local lastFlickTime = 0
 
 local Camera = workspace.CurrentCamera
 
--- --- FLICK AJUSTADO (MAIS VISÍVEL) ---
+-- --- FLICK LEGIT ---
 local function performVideoFlick()
     if isFlicking then return end
     isFlicking = true
@@ -57,21 +57,18 @@ local function performVideoFlick()
         return
     end
 
-    -- pulo
+    -- pulo normal (sem boost)
     hum:ChangeState(Enum.HumanoidStateType.Jumping)
-
-    -- impulso
-    hrp.Velocity = Vector3.new(hrp.Velocity.X, 60, hrp.Velocity.Z)
 
     local startCFrame = Camera.CFrame
 
-    -- rotação 45°
+    -- rotação
     Camera.CFrame = startCFrame * CFrame.Angles(0, math.rad(45), 0)
 
-    -- um pouco mais lento (mais visível)
-    task.wait(0.045)
+    -- tempo equilibrado (visível porém rápido)
+    task.wait(0.04)
 
-    -- volta rápida ainda
+    -- volta levemente mais rápida
     Camera.CFrame = startCFrame
 
     isFlicking = false
@@ -118,4 +115,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
-print("Auto Wall Hop (VISUAL TRYHARD) Loaded!")
+print("Auto Wall Hop (LEGIT CLEAN) Loaded!")
