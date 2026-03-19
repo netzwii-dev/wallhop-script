@@ -1,8 +1,8 @@
 --[[
-    Auto Wall Hop (FIX DETECTION)
-    - detecção corrigida (funciona colado)
+    Auto Wall Hop (OLD STYLE RESTORED)
+    - detecção antiga (funciona colado)
     - flick mantido
-    - botão mais pra direita
+    - botão +80px direita
 ]]
 
 local Players = game:GetService("Players")
@@ -31,10 +31,10 @@ local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 10)
 UICorner.Parent = TextButton
 
--- POSIÇÃO (+40px direita novamente)
+-- POSIÇÃO (+80px direita)
 RunService.RenderStepped:Connect(function()
     local inset = GuiService:GetGuiInset()
-    TextButton.Position = UDim2.new(0, 130, 0, inset.Y - 58)
+    TextButton.Position = UDim2.new(0, 170, 0, inset.Y - 58)
 end)
 
 -- --- VARIÁVEIS ---
@@ -44,7 +44,7 @@ local lastFlickTime = 0
 
 local Camera = workspace.CurrentCamera
 
--- --- FLICK (mantido) ---
+-- --- FLICK (mantido legit) ---
 local function performVideoFlick()
     if isFlicking then return end
     isFlicking = true
@@ -56,7 +56,6 @@ local function performVideoFlick()
         return
     end
 
-    -- pulo normal
     hum:ChangeState(Enum.HumanoidStateType.Jumping)
 
     local startCFrame = Camera.CFrame
@@ -70,7 +69,7 @@ local function performVideoFlick()
     isFlicking = false
 end
 
--- --- DETECÇÃO MELHORADA ---
+-- --- DETECÇÃO ANTIGA (FUNCIONA COLADO) ---
 local lastHitInstance = nil
 
 RunService.Heartbeat:Connect(function()
@@ -84,11 +83,12 @@ RunService.Heartbeat:Connect(function()
     raycastParams.FilterDescendantsInstances = {char}
     raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
-    -- AUMENTEI DISTÂNCIA + OFFSET PRA FUNCIONAR COLADO
-    local direction = Camera.CFrame.LookVector * 5
-    local origin = hrp.Position + Camera.CFrame.LookVector * 0.5
-
-    local result = workspace:Raycast(origin, direction, raycastParams)
+    -- MÉTODO ANTIGO (sem offset, direto)
+    local result = workspace:Raycast(
+        hrp.Position,
+        Camera.CFrame.LookVector * 3,
+        raycastParams
+    )
 
     if result and result.Instance and result.Instance.CanCollide then
         if lastHitInstance and lastHitInstance ~= result.Instance then
@@ -111,4 +111,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
-print("Auto Wall Hop (FIXED CLOSE RANGE) Loaded!")
+print("Auto Wall Hop (OLD STYLE BACK) Loaded!")
