@@ -1,8 +1,8 @@
 --[[
-    Auto Wall Hop (LEGIT VERSION)
-    - mantém altura original
-    - flick clean e levemente mais rápido na volta
-    - botão ajustado
+    Auto Wall Hop (FIX DETECTION)
+    - detecção corrigida (funciona colado)
+    - flick mantido
+    - botão mais pra direita
 ]]
 
 local Players = game:GetService("Players")
@@ -31,10 +31,10 @@ local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 10)
 UICorner.Parent = TextButton
 
--- POSIÇÃO (mais 40px pra direita)
+-- POSIÇÃO (+40px direita novamente)
 RunService.RenderStepped:Connect(function()
     local inset = GuiService:GetGuiInset()
-    TextButton.Position = UDim2.new(0, 90, 0, inset.Y - 58)
+    TextButton.Position = UDim2.new(0, 130, 0, inset.Y - 58)
 end)
 
 -- --- VARIÁVEIS ---
@@ -44,37 +44,33 @@ local lastFlickTime = 0
 
 local Camera = workspace.CurrentCamera
 
--- --- FLICK LEGIT ---
+-- --- FLICK (mantido) ---
 local function performVideoFlick()
     if isFlicking then return end
     isFlicking = true
     
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChild("Humanoid")
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hum or not hrp then
+    if not hum then
         isFlicking = false
         return
     end
 
-    -- pulo normal (sem boost)
+    -- pulo normal
     hum:ChangeState(Enum.HumanoidStateType.Jumping)
 
     local startCFrame = Camera.CFrame
 
-    -- rotação
     Camera.CFrame = startCFrame * CFrame.Angles(0, math.rad(45), 0)
 
-    -- tempo equilibrado (visível porém rápido)
     task.wait(0.04)
 
-    -- volta levemente mais rápida
     Camera.CFrame = startCFrame
 
     isFlicking = false
 end
 
--- --- DETECÇÃO DE PAREDE ---
+-- --- DETECÇÃO MELHORADA ---
 local lastHitInstance = nil
 
 RunService.Heartbeat:Connect(function()
@@ -88,11 +84,11 @@ RunService.Heartbeat:Connect(function()
     raycastParams.FilterDescendantsInstances = {char}
     raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
-    local result = workspace:Raycast(
-        hrp.Position,
-        Camera.CFrame.LookVector * 3,
-        raycastParams
-    )
+    -- AUMENTEI DISTÂNCIA + OFFSET PRA FUNCIONAR COLADO
+    local direction = Camera.CFrame.LookVector * 5
+    local origin = hrp.Position + Camera.CFrame.LookVector * 0.5
+
+    local result = workspace:Raycast(origin, direction, raycastParams)
 
     if result and result.Instance and result.Instance.CanCollide then
         if lastHitInstance and lastHitInstance ~= result.Instance then
@@ -115,4 +111,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
-print("Auto Wall Hop (LEGIT CLEAN) Loaded!")
+print("Auto Wall Hop (FIXED CLOSE RANGE) Loaded!")
