@@ -1,7 +1,7 @@
 --[[
-    Auto Wall Hop (Clean Version)
-    - Câmera 45° esquerda
-    - Botão colado no chat (DPI friendly)
+    Auto Wall Hop (Clean Version FIXED)
+    - Câmera 45° esquerda REAL (corrigido)
+    - Botão colado no chat (dinâmico)
 ]]
 
 local Players = game:GetService("Players")
@@ -19,11 +19,6 @@ ScreenGui.Parent = PlayerGui
 
 local TextButton = Instance.new("TextButton")
 TextButton.Size = UDim2.new(0, 140, 0, 45)
-
--- POSIÇÃO COLADA NO CHAT (funciona em qualquer DPI)
-local inset = GuiService:GetGuiInset()
-TextButton.Position = UDim2.new(0, 10, 0, inset.Y + 2)
-
 TextButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 TextButton.Text = "Wall Hop Off"
 TextButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -35,6 +30,12 @@ local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 10)
 UICorner.Parent = TextButton
 
+-- POSIÇÃO DINÂMICA (COLADO NO CHAT REAL)
+RunService.RenderStepped:Connect(function()
+    local inset = GuiService:GetGuiInset()
+    TextButton.Position = UDim2.new(0, 10, 0, inset.Y + 2)
+end)
+
 -- --- VARIÁVEIS ---
 local isWallHopEnabled = false
 local isFlicking = false
@@ -42,7 +43,7 @@ local lastFlickTime = 0
 
 local Camera = workspace.CurrentCamera
 
--- --- FLICK 45° ESQUERDA ---
+-- --- FLICK REAL PRA ESQUERDA (CORRIGIDO) ---
 local function performVideoFlick()
     if isFlicking then return end
     isFlicking = true
@@ -61,9 +62,11 @@ local function performVideoFlick()
     -- impulso
     hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
 
-    -- rotação 45° esquerda
     local startCFrame = Camera.CFrame
-    Camera.CFrame = startCFrame * CFrame.Angles(0, math.rad(-45), 0)
+
+    -- ROTACIONA USANDO O EIXO GLOBAL PRA GARANTIR ESQUERDA
+    local leftRotation = CFrame.fromAxisAngle(Vector3.new(0,1,0), math.rad(-45))
+    Camera.CFrame = leftRotation * startCFrame
 
     task.wait(0.06)
 
@@ -113,4 +116,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
-print("Auto Wall Hop (45° + Chat Aligned) Loaded!")
+print("Auto Wall Hop (FIXED TRUE LEFT + CHAT LOCK) Loaded!")
