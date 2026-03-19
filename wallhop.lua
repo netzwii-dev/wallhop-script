@@ -1,8 +1,8 @@
 --[[
-    Auto Wall Hop (Clean Version)
-    - Câmera 90° esquerda correta
-    - Botão FIXO (sem arrastar)
-    - Posição: canto superior esquerdo (abaixo do chat)
+    Auto Wall Hop (No Camera)
+    - Sem flick de câmera
+    - Só pulo automático
+    - Botão fixo no topo esquerdo
 ]]
 
 local Players = game:GetService("Players")
@@ -20,8 +20,8 @@ ScreenGui.Parent = PlayerGui
 local TextButton = Instance.new("TextButton")
 TextButton.Size = UDim2.new(0, 140, 0, 45)
 
--- posição fixa (canto superior esquerdo, abaixo do chat)
-TextButton.Position = UDim2.new(0, 10, 0, 80)
+-- 🔥 posição ajustada (mais alto, abaixo do chat/menu)
+TextButton.Position = UDim2.new(0, 10, 0, 40)
 
 TextButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 TextButton.Text = "Wall Hop Off"
@@ -36,39 +36,21 @@ UICorner.Parent = TextButton
 
 -- --- VARIÁVEIS ---
 local isWallHopEnabled = false
-local isFlicking = false
-local lastFlickTime = 0
+local lastHopTime = 0
 
-local Camera = workspace.CurrentCamera
-
--- --- FLICK CORRETO (90° ESQUERDA DA TELA) ---
-local function performVideoFlick()
-    if isFlicking then return end
-    isFlicking = true
-    
+-- --- WALLHOP (SEM CÂMERA) ---
+local function doWallHop()
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChild("Humanoid")
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hum or not hrp then
-        isFlicking = false
-        return
-    end
+
+    if not hum or not hrp then return end
 
     -- pulo
     hum:ChangeState(Enum.HumanoidStateType.Jumping)
 
-    -- impulso
+    -- impulso pra cima
     hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
-
-    -- rotação RELATIVA correta (esquerda da tela)
-    local startCFrame = Camera.CFrame
-    Camera.CFrame = startCFrame * CFrame.Angles(0, math.rad(-90), 0)
-
-    task.wait(0.06)
-
-    Camera.CFrame = startCFrame
-
-    isFlicking = false
 end
 
 -- --- DETECÇÃO DE PAREDE ---
@@ -87,15 +69,15 @@ RunService.Heartbeat:Connect(function()
 
     local result = workspace:Raycast(
         hrp.Position,
-        Camera.CFrame.LookVector * 3,
+        workspace.CurrentCamera.CFrame.LookVector * 3,
         raycastParams
     )
 
     if result and result.Instance and result.Instance.CanCollide then
         if lastHitInstance and lastHitInstance ~= result.Instance then
-            if tick() - lastFlickTime > 0.05 then
-                lastFlickTime = tick()
-                performVideoFlick()
+            if tick() - lastHopTime > 0.05 then
+                lastHopTime = tick()
+                doWallHop()
             end
         end
         lastHitInstance = result.Instance
@@ -112,4 +94,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
-print("Auto Wall Hop (Clean) Loaded!")
+print("Auto Wall Hop (No Camera) Loaded!")
