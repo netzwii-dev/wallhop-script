@@ -1,8 +1,8 @@
 --[[
-    Auto Wall Hop (FINAL TRYHARD)
-    - 45° direita (invertido proposital)
-    - retorno MUITO rápido (levemente ajustado)
-    - botão +60px mais alto
+    Auto Wall Hop Script (Video Recreation Version)
+    - Flick ajustado para 45° direita
+    - Tempo do flick: 0.035
+    - Botão travado na posição do chat
 ]]
 
 local Players = game:GetService("Players")
@@ -19,7 +19,8 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
 local TextButton = Instance.new("TextButton")
-TextButton.Size = UDim2.new(0, 140, 0, 45)
+TextButton.Name = "WallHopToggleButton"
+TextButton.Size = UDim2.new(0, 140, 0, 50)
 TextButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 TextButton.Text = "Wall Hop Off"
 TextButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -28,95 +29,82 @@ TextButton.TextScaled = true
 TextButton.Parent = ScreenGui
 
 local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.CornerRadius = UDim.new(0, 12)
 UICorner.Parent = TextButton
 
--- POSIÇÃO (X = 150, +60px pra cima)
+-- 🔒 POSIÇÃO TRAVADA (SEM DRAG)
 RunService.RenderStepped:Connect(function()
-    local inset = GuiService:GetGuiInset()
-    TextButton.Position = UDim2.new(0, 150, 0, inset.Y - 58)
+    local inset = GuiService:GetGuiInset()
+    TextButton.Position = UDim2.new(0, 150, 0, inset.Y - 58)
 end)
 
--- --- VARIÁVEIS ---
+-- --- LOGIC ---
 local isWallHopEnabled = false
 local isFlicking = false
 local lastFlickTime = 0
-
 local Camera = workspace.CurrentCamera
 
--- --- FLICK TRYHARD (RÁPIDO + DIREITA) ---
+-- 🎯 Flick 45° direita (0.035)
 local function performVideoFlick()
-    if isFlicking then return end
-    isFlicking = true
-    
-    local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChild("Humanoid")
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hum or not hrp then
-        isFlicking = false
-        return
-    end
+    if isFlicking then return end
+    isFlicking = true
+    
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChild("Humanoid")
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hum or not hrp then isFlicking = false return end
 
-    -- pulo
-    hum:ChangeState(Enum.HumanoidStateType.Jumping)
+    -- Jump
+    hum:ChangeState(Enum.HumanoidStateType.Jumping)
 
-    -- impulso
-    hrp.Velocity = Vector3.new(hrp.Velocity.X, 60, hrp.Velocity.Z)
+    -- Boost
+    hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
 
-    local startCFrame = Camera.CFrame
+    -- Flick 45°
+    local startCFrame = Camera.CFrame
+    Camera.CFrame = startCFrame * CFrame.Angles(0, math.rad(45), 0)
 
-    -- 45° DIREITA (invertido)
-    local rotation = CFrame.Angles(0, math.rad(45), 0)
-    Camera.CFrame = startCFrame * rotation
+    task.wait(0.035)
 
-    -- tempo ajustado (flick levemente mais lento)
-    task.wait(0.03)
+    Camera.CFrame = startCFrame
 
-    -- VOLTA
-    Camera.CFrame = startCFrame
-
-    isFlicking = false
+    isFlicking = false
 end
 
--- --- DETECÇÃO DE PAREDE ---
+-- Wall detect
 local lastHitInstance = nil
 
 RunService.Heartbeat:Connect(function()
-    if not isWallHopEnabled then return end
+    if not isWallHopEnabled then return end
+    
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
 
-    local char = LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterDescendantsInstances = {char}
+    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterDescendantsInstances = {char}
-    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+    local result = workspace:Raycast(hrp.Position, Camera.CFrame.LookVector * 3, raycastParams)
 
-    local result = workspace:Raycast(
-        hrp.Position,
-        Camera.CFrame.LookVector * 3,
-        raycastParams
-    )
-
-    if result and result.Instance and result.Instance.CanCollide then
-        if lastHitInstance and lastHitInstance ~= result.Instance then
-            if tick() - lastFlickTime > 0.035 then
-                lastFlickTime = tick()
-                performVideoFlick()
-            end
-        end
-        lastHitInstance = result.Instance
-    else
-        lastHitInstance = nil
-    end
+    if result and result.Instance.CanCollide then
+        if lastHitInstance and lastHitInstance ~= result.Instance then
+            if tick() - lastFlickTime > 0.05 then
+                lastFlickTime = tick()
+                performVideoFlick()
+            end
+        end
+        lastHitInstance = result.Instance
+    else
+        lastHitInstance = nil
+    end
 end)
 
--- --- BOTÃO ---
+-- Toggle
 TextButton.MouseButton1Click:Connect(function()
-    isWallHopEnabled = not isWallHopEnabled
-
-    TextButton.Text = isWallHopEnabled and "Wall Hop On" or "Wall Hop Off"
-    TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
+    isWallHopEnabled = not isWallHopEnabled
+    TextButton.Text = isWallHopEnabled and "Wall Hop On" or "Wall Hop Off"
+    TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
-print("Auto Wall Hop (FINAL TRYHARD TUNED) Loaded!")
+print("Video Style Auto Wall Hop Loaded!")
