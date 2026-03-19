@@ -1,8 +1,8 @@
 --[[
-    Auto Wall Hop (OLD STYLE RESTORED)
-    - detecção antiga (funciona colado)
-    - flick mantido
-    - botão +80px direita
+    Auto Wall Hop (ORIGINAL BASE + FLICK AJUSTADO)
+    - detecção ORIGINAL (funciona colado)
+    - flick ajustado (legit/visível)
+    - botão 30px pra esquerda
 ]]
 
 local Players = game:GetService("Players")
@@ -31,10 +31,10 @@ local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 10)
 UICorner.Parent = TextButton
 
--- POSIÇÃO (+80px direita)
+-- POSIÇÃO (30px pra esquerda do anterior)
 RunService.RenderStepped:Connect(function()
     local inset = GuiService:GetGuiInset()
-    TextButton.Position = UDim2.new(0, 170, 0, inset.Y - 58)
+    TextButton.Position = UDim2.new(0, 140, 0, inset.Y - 58)
 end)
 
 -- --- VARIÁVEIS ---
@@ -44,22 +44,25 @@ local lastFlickTime = 0
 
 local Camera = workspace.CurrentCamera
 
--- --- FLICK (mantido legit) ---
+-- --- FLICK AJUSTADO (mantido bom/visível) ---
 local function performVideoFlick()
     if isFlicking then return end
     isFlicking = true
     
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChild("Humanoid")
-    if not hum then
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hum or not hrp then
         isFlicking = false
         return
     end
 
+    -- pulo normal
     hum:ChangeState(Enum.HumanoidStateType.Jumping)
 
     local startCFrame = Camera.CFrame
 
+    -- 45° (mantido como você ajustou)
     Camera.CFrame = startCFrame * CFrame.Angles(0, math.rad(45), 0)
 
     task.wait(0.04)
@@ -69,7 +72,7 @@ local function performVideoFlick()
     isFlicking = false
 end
 
--- --- DETECÇÃO ANTIGA (FUNCIONA COLADO) ---
+-- --- DETECÇÃO ORIGINAL (IGUAL AO SEU PRIMEIRO SCRIPT) ---
 local lastHitInstance = nil
 
 RunService.Heartbeat:Connect(function()
@@ -83,7 +86,6 @@ RunService.Heartbeat:Connect(function()
     raycastParams.FilterDescendantsInstances = {char}
     raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
-    -- MÉTODO ANTIGO (sem offset, direto)
     local result = workspace:Raycast(
         hrp.Position,
         Camera.CFrame.LookVector * 3,
@@ -92,7 +94,7 @@ RunService.Heartbeat:Connect(function()
 
     if result and result.Instance and result.Instance.CanCollide then
         if lastHitInstance and lastHitInstance ~= result.Instance then
-            if tick() - lastFlickTime > 0.04 then
+            if tick() - lastFlickTime > 0.05 then
                 lastFlickTime = tick()
                 performVideoFlick()
             end
@@ -111,4 +113,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
-print("Auto Wall Hop (OLD STYLE BACK) Loaded!")
+print("Auto Wall Hop (ORIGINAL RESTORED + FLICK) Loaded!")
