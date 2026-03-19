@@ -1,13 +1,13 @@
 --[[
-    Auto Wall Hop Script (Final Version)
-    - Flick 90° esquerda mais suave
-    - Botão arrastável + sistema de trava (hold 1s)
+    Auto Wall Hop (Clean Version)
+    - Câmera 90° esquerda correta
+    - Botão FIXO (sem arrastar)
+    - Posição: canto superior esquerdo (abaixo do chat)
 ]]
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 
 -- --- UI ---
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -18,8 +18,11 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
 local TextButton = Instance.new("TextButton")
-TextButton.Size = UDim2.new(0, 140, 0, 50)
-TextButton.Position = UDim2.new(0.1, 0, 0.7, 0)
+TextButton.Size = UDim2.new(0, 140, 0, 45)
+
+-- posição fixa (canto superior esquerdo, abaixo do chat)
+TextButton.Position = UDim2.new(0, 10, 0, 80)
+
 TextButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 TextButton.Text = "Wall Hop Off"
 TextButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -28,18 +31,17 @@ TextButton.TextScaled = true
 TextButton.Parent = ScreenGui
 
 local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 12)
+UICorner.CornerRadius = UDim.new(0, 10)
 UICorner.Parent = TextButton
 
 -- --- VARIÁVEIS ---
 local isWallHopEnabled = false
 local isFlicking = false
 local lastFlickTime = 0
-local isLocked = false
 
 local Camera = workspace.CurrentCamera
 
--- --- FLICK MODIFICADO ---
+-- --- FLICK CORRETO (90° ESQUERDA DA TELA) ---
 local function performVideoFlick()
     if isFlicking then return end
     isFlicking = true
@@ -58,11 +60,11 @@ local function performVideoFlick()
     -- impulso
     hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
 
-    -- câmera (90° esquerda + mais suave)
+    -- rotação RELATIVA correta (esquerda da tela)
     local startCFrame = Camera.CFrame
     Camera.CFrame = startCFrame * CFrame.Angles(0, math.rad(-90), 0)
 
-    task.wait(0.08)
+    task.wait(0.06)
 
     Camera.CFrame = startCFrame
 
@@ -102,71 +104,12 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- --- BOTÃO ON/OFF ---
+-- --- BOTÃO ---
 TextButton.MouseButton1Click:Connect(function()
-    if isLocked then return end
-
     isWallHopEnabled = not isWallHopEnabled
 
     TextButton.Text = isWallHopEnabled and "Wall Hop On" or "Wall Hop Off"
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
--- --- DRAG + LOCK ---
-local dragging = false
-local dragStart, startPos
-local holdStart = 0
-
-TextButton.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 
-    or input.UserInputType == Enum.UserInputType.Touch then
-        
-        holdStart = tick()
-
-        if not isLocked then
-            dragging = true
-            dragStart = input.Position
-            startPos = TextButton.Position
-        end
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and not isLocked and (
-        input.UserInputType == Enum.UserInputType.MouseMovement 
-        or input.UserInputType == Enum.UserInputType.Touch
-    ) then
-        
-        local delta = input.Position - dragStart
-
-        TextButton.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 
-    or input.UserInputType == Enum.UserInputType.Touch then
-        
-        dragging = false
-
-        -- segurar 1s = trava/destrava
-        if tick() - holdStart > 1 then
-            isLocked = not isLocked
-
-            if isLocked then
-                TextButton.Text = "Locked 🔒"
-                TextButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-            else
-                TextButton.Text = isWallHopEnabled and "Wall Hop On" or "Wall Hop Off"
-                TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
-            end
-        end
-    end
-end)
-
-print("Auto Wall Hop (Final) Loaded!")
+print("Auto Wall Hop (Clean) Loaded!")
