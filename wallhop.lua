@@ -1,8 +1,8 @@
 --[[
-    Auto Wall Hop (TRYHARD VERSION)
-    - Flick mais rápido
-    - Direção invertida
-    - Botão +30px mais alto
+    Auto Wall Hop (FINAL TRYHARD)
+    - 45° direita (invertido proposital)
+    - retorno MUITO rápido
+    - botão +60px mais alto
 ]]
 
 local Players = game:GetService("Players")
@@ -31,10 +31,10 @@ local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 10)
 UICorner.Parent = TextButton
 
--- POSIÇÃO (SUBIDO +30px)
+-- POSIÇÃO (+60px pra cima)
 RunService.RenderStepped:Connect(function()
     local inset = GuiService:GetGuiInset()
-    TextButton.Position = UDim2.new(0, 10, 0, inset.Y - 28)
+    TextButton.Position = UDim2.new(0, 10, 0, inset.Y - 58)
 end)
 
 -- --- VARIÁVEIS ---
@@ -44,7 +44,7 @@ local lastFlickTime = 0
 
 local Camera = workspace.CurrentCamera
 
--- --- FLICK TRYHARD (RÁPIDO + INVERTIDO) ---
+-- --- FLICK TRYHARD (RÁPIDO + DIREITA) ---
 local function performVideoFlick()
     if isFlicking then return end
     isFlicking = true
@@ -60,18 +60,19 @@ local function performVideoFlick()
     -- pulo
     hum:ChangeState(Enum.HumanoidStateType.Jumping)
 
-    -- impulso mais forte (tryhard)
+    -- impulso
     hrp.Velocity = Vector3.new(hrp.Velocity.X, 60, hrp.Velocity.Z)
 
     local startCFrame = Camera.CFrame
 
-    -- INVERTIDO (agora positivo)
-    local rotation = CFrame.fromAxisAngle(Vector3.new(0,1,0), math.rad(45))
-    Camera.CFrame = rotation * startCFrame
+    -- 45° DIREITA (invertido)
+    local rotation = CFrame.Angles(0, math.rad(45), 0)
+    Camera.CFrame = startCFrame * rotation
 
-    -- MAIS RÁPIDO
-    task.wait(0.035)
+    -- tempo mínimo (flick seco)
+    task.wait(0.02)
 
+    -- VOLTA MAIS RÁPIDA AINDA
     Camera.CFrame = startCFrame
 
     isFlicking = false
@@ -99,7 +100,7 @@ RunService.Heartbeat:Connect(function()
 
     if result and result.Instance and result.Instance.CanCollide then
         if lastHitInstance and lastHitInstance ~= result.Instance then
-            if tick() - lastFlickTime > 0.04 then -- mais responsivo
+            if tick() - lastFlickTime > 0.035 then
                 lastFlickTime = tick()
                 performVideoFlick()
             end
@@ -118,4 +119,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
-print("Auto Wall Hop (TRYHARD FAST) Loaded!")
+print("Auto Wall Hop (FINAL TRYHARD TUNED) Loaded!")
