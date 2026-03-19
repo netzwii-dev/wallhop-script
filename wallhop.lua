@@ -1,97 +1,71 @@
---[[
-    Auto Wall Hop (No Camera)
-    - Sem flick de câmera
-    - Só pulo automático
-    - Botão fixo no topo esquerdo
-]]
-
+-- serviços
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
--- --- UI ---
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
 
+-- GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AutoWallHopGui"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = PlayerGui
+ScreenGui.Parent = game.CoreGui
 
-local TextButton = Instance.new("TextButton")
-TextButton.Size = UDim2.new(0, 140, 0, 45)
+local Button = Instance.new("TextButton")
+Button.Parent = ScreenGui
+Button.Size = UDim2.new(0, 120, 0, 35)
 
--- 🔥 posição ajustada (mais alto, abaixo do chat/menu)
-TextButton.Position = UDim2.new(0, 10, 0, 40)
+-- posição AJUSTADA (mais pra direita e mais pra cima)
+Button.Position = UDim2.new(0, 140, 0, 210)
 
-TextButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-TextButton.Text = "Wall Hop Off"
-TextButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-TextButton.Font = Enum.Font.GothamBold
-TextButton.TextScaled = true
-TextButton.Parent = ScreenGui
+Button.Text = "Wallhop: OFF"
+Button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Button.TextColor3 = Color3.new(1,1,1)
+Button.TextSize = 14
 
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 10)
-UICorner.Parent = TextButton
+local enabled = false
 
--- --- VARIÁVEIS ---
-local isWallHopEnabled = false
-local lastHopTime = 0
+-- toggle
+Button.MouseButton1Click:Connect(function()
+    enabled = not enabled
+    Button.Text = enabled and "Wallhop: ON" or "Wallhop: OFF"
+end)
 
--- --- WALLHOP (SEM CÂMERA) ---
-local function doWallHop()
-    local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChild("Humanoid")
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-
-    if not hum or not hrp then return end
-
-    -- pulo
-    hum:ChangeState(Enum.HumanoidStateType.Jumping)
-
-    -- impulso pra cima
-    hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
+-- pegar personagem
+local function getChar()
+    return player.Character or player.CharacterAdded:Wait()
 end
 
--- --- DETECÇÃO DE PAREDE ---
-local lastHitInstance = nil
+-- flick leve pra esquerda
+local function flickLeft()
+    local original = camera.CFrame
+    camera.CFrame = camera.CFrame * CFrame.Angles(0, math.rad(-45), 0)
+    task.wait(0.04) -- bem rápido
+    camera.CFrame = original
+end
 
-RunService.Heartbeat:Connect(function()
-    if not isWallHopEnabled then return end
-
-    local char = LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterDescendantsInstances = {char}
-    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-
-    local result = workspace:Raycast(
-        hrp.Position,
-        workspace.CurrentCamera.CFrame.LookVector * 3,
-        raycastParams
-    )
-
-    if result and result.Instance and result.Instance.CanCollide then
-        if lastHitInstance and lastHitInstance ~= result.Instance then
-            if tick() - lastHopTime > 0.05 then
-                lastHopTime = tick()
-                doWallHop()
+-- wallhop loop
+RunService.RenderStepped:Connect(function()
+    if not enabled then return end
+    
+    local char = getChar()
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    local root = char:FindFirstChild("HumanoidRootPart")
+    
+    if humanoid and root then
+        -- verifica se está no ar e perto de parede
+        if humanoid:GetState() == Enum.HumanoidStateType.Freefall then
+            
+            local ray = Ray.new(root.Position, root.CFrame.LookVector * 3)
+            local hit = workspace:FindPartOnRay(ray, char)
+            
+            if hit then
+                -- pulo + impulso
+                humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                root.Velocity = Vector3.new(root.Velocity.X, 50, root.Velocity.Z)
+                
+                -- flick leve
+                flickLeft()
             end
         end
-        lastHitInstance = result.Instance
-    else
-        lastHitInstance = nil
     end
 end)
-
--- --- BOTÃO ---
-TextButton.MouseButton1Click:Connect(function()
-    isWallHopEnabled = not isWallHopEnabled
-
-    TextButton.Text = isWallHopEnabled and "Wall Hop On" or "Wall Hop Off"
-    TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
-end)
-
-print("Auto Wall Hop (No Camera) Loaded!")
