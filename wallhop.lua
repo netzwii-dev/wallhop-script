@@ -1,9 +1,8 @@
 --[[
-    Auto Wall Hop (LEGIT PERFEITO)
-    - funciona colado
-    - comportamento natural
-    - flick mantido
-    - botão +20px direita
+    Auto Wall Hop (FINAL TRYHARD)
+    - 45° direita (invertido proposital)
+    - retorno MUITO rápido
+    - botão +60px mais alto
 ]]
 
 local Players = game:GetService("Players")
@@ -21,13 +20,6 @@ ScreenGui.Parent = PlayerGui
 
 local TextButton = Instance.new("TextButton")
 TextButton.Size = UDim2.new(0, 140, 0, 45)
-
--- posição atualizada (+20px direita)
-RunService.RenderStepped:Connect(function()
-    local inset = GuiService:GetGuiInset()
-    TextButton.Position = UDim2.new(0, 130, 0, inset.Y - 58)
-end)
-
 TextButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 TextButton.Text = "Wall Hop Off"
 TextButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -39,6 +31,12 @@ local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 10)
 UICorner.Parent = TextButton
 
+-- POSIÇÃO (X = 150, +60px pra cima)
+RunService.RenderStepped:Connect(function()
+    local inset = GuiService:GetGuiInset()
+    TextButton.Position = UDim2.new(0, 150, 0, inset.Y - 58)
+end)
+
 -- --- VARIÁVEIS ---
 local isWallHopEnabled = false
 local isFlicking = false
@@ -46,32 +44,43 @@ local lastFlickTime = 0
 
 local Camera = workspace.CurrentCamera
 
--- --- FLICK (mantido) ---
+-- --- FLICK TRYHARD (RÁPIDO + DIREITA) ---
 local function performVideoFlick()
     if isFlicking then return end
     isFlicking = true
     
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChild("Humanoid")
-    if not hum then
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hum or not hrp then
         isFlicking = false
         return
     end
 
+    -- pulo
     hum:ChangeState(Enum.HumanoidStateType.Jumping)
+
+    -- impulso
+    hrp.Velocity = Vector3.new(hrp.Velocity.X, 60, hrp.Velocity.Z)
 
     local startCFrame = Camera.CFrame
 
-    Camera.CFrame = startCFrame * CFrame.Angles(0, math.rad(45), 0)
+    -- 45° DIREITA (invertido)
+    local rotation = CFrame.Angles(0, math.rad(45), 0)
+    Camera.CFrame = startCFrame * rotation
 
-    task.wait(0.04)
+    -- tempo mínimo (flick seco)
+    task.wait(0.02)
 
+    -- VOLTA MAIS RÁPIDA AINDA
     Camera.CFrame = startCFrame
 
     isFlicking = false
 end
 
--- --- DETECÇÃO LEGIT ---
+-- --- DETECÇÃO DE PAREDE ---
+local lastHitInstance = nil
+
 RunService.Heartbeat:Connect(function()
     if not isWallHopEnabled then return end
 
@@ -90,15 +99,15 @@ RunService.Heartbeat:Connect(function()
     )
 
     if result and result.Instance and result.Instance.CanCollide then
-        
-        local speed = hrp.Velocity.Magnitude
-
-        if speed > 2 then
-            if tick() - lastFlickTime > 0.045 then
+        if lastHitInstance and lastHitInstance ~= result.Instance then
+            if tick() - lastFlickTime > 0.035 then
                 lastFlickTime = tick()
                 performVideoFlick()
             end
         end
+        lastHitInstance = result.Instance
+    else
+        lastHitInstance = nil
     end
 end)
 
@@ -110,4 +119,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
-print("Auto Wall Hop (LEGIT PERFECT + POS FIX) Loaded!")
+print("Auto Wall Hop (FINAL TRYHARD TUNED) Loaded!")
