@@ -97,7 +97,7 @@ RunService.Heartbeat:Connect(function()
 
     if result and result.Instance and result.Instance.CanCollide then
         if lastHitInstance and lastHitInstance ~= result.Instance then
-            if tick() - lastFlickTime > 0.05 then
+            if tick() - lastFlickTime > 0.065 then
                 lastFlickTime = tick()
                 performVideoFlick()
             end
