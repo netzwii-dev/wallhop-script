@@ -1,7 +1,7 @@
 --[[
     Auto Wall Hop Script (Video Recreation Version)
     - Flick 45° direita
-    - Tempo: 0.065
+    - Tempo: 0.038
     - Botão travado (sem drag)
     - Posição fixa abaixo do chat
 ]]
@@ -68,7 +68,7 @@ local function performVideoFlick()
     local startCFrame = Camera.CFrame
     Camera.CFrame = startCFrame * CFrame.Angles(0, math.rad(45), 0)
 
-    task.wait(0.065)
+    task.wait(0.038)
 
     Camera.CFrame = startCFrame
 
