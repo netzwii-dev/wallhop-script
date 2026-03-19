@@ -1,8 +1,9 @@
 --[[
-    Auto Wall Hop (ORIGINAL + FLICK AJUSTADO)
-    - wallhop original (intacto)
-    - flick ajustado
-    - botão 30px esquerda
+    Auto Wall Hop (LEGIT PERFEITO)
+    - funciona colado
+    - comportamento natural
+    - flick mantido
+    - botão +20px direita
 ]]
 
 local Players = game:GetService("Players")
@@ -21,10 +22,10 @@ ScreenGui.Parent = PlayerGui
 local TextButton = Instance.new("TextButton")
 TextButton.Size = UDim2.new(0, 140, 0, 45)
 
--- posição ajustada (30px esquerda do atual)
+-- posição atualizada (+20px direita)
 RunService.RenderStepped:Connect(function()
     local inset = GuiService:GetGuiInset()
-    TextButton.Position = UDim2.new(0, 110, 0, inset.Y - 58)
+    TextButton.Position = UDim2.new(0, 130, 0, inset.Y - 58)
 end)
 
 TextButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -45,25 +46,22 @@ local lastFlickTime = 0
 
 local Camera = workspace.CurrentCamera
 
--- --- FLICK AJUSTADO (SEU PADRÃO ATUAL) ---
+-- --- FLICK (mantido) ---
 local function performVideoFlick()
     if isFlicking then return end
     isFlicking = true
     
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChild("Humanoid")
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hum or not hrp then
+    if not hum then
         isFlicking = false
         return
     end
 
-    -- pulo normal
     hum:ChangeState(Enum.HumanoidStateType.Jumping)
 
     local startCFrame = Camera.CFrame
 
-    -- 45° direita (como estava funcionando melhor)
     Camera.CFrame = startCFrame * CFrame.Angles(0, math.rad(45), 0)
 
     task.wait(0.04)
@@ -73,9 +71,7 @@ local function performVideoFlick()
     isFlicking = false
 end
 
--- --- DETECÇÃO ORIGINAL (INTACTA) ---
-local lastHitInstance = nil
-
+-- --- DETECÇÃO LEGIT ---
 RunService.Heartbeat:Connect(function()
     if not isWallHopEnabled then return end
 
@@ -94,15 +90,15 @@ RunService.Heartbeat:Connect(function()
     )
 
     if result and result.Instance and result.Instance.CanCollide then
-        if lastHitInstance and lastHitInstance ~= result.Instance then
-            if tick() - lastFlickTime > 0.05 then
+        
+        local speed = hrp.Velocity.Magnitude
+
+        if speed > 2 then
+            if tick() - lastFlickTime > 0.045 then
                 lastFlickTime = tick()
                 performVideoFlick()
             end
         end
-        lastHitInstance = result.Instance
-    else
-        lastHitInstance = nil
     end
 end)
 
@@ -114,4 +110,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
-print("Auto Wall Hop (ORIGINAL TRUE + FLICK) Loaded!")
+print("Auto Wall Hop (LEGIT PERFECT + POS FIX) Loaded!")
