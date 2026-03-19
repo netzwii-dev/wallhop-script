@@ -1,8 +1,8 @@
 --[[
-    Auto Wall Hop (ORIGINAL BASE + FLICK AJUSTADO)
-    - detecção ORIGINAL (funciona colado)
-    - flick ajustado (legit/visível)
-    - botão 30px pra esquerda
+    Auto Wall Hop (ORIGINAL + FLICK AJUSTADO)
+    - wallhop original (intacto)
+    - flick ajustado
+    - botão 30px esquerda
 ]]
 
 local Players = game:GetService("Players")
@@ -20,6 +20,13 @@ ScreenGui.Parent = PlayerGui
 
 local TextButton = Instance.new("TextButton")
 TextButton.Size = UDim2.new(0, 140, 0, 45)
+
+-- posição ajustada (30px esquerda do atual)
+RunService.RenderStepped:Connect(function()
+    local inset = GuiService:GetGuiInset()
+    TextButton.Position = UDim2.new(0, 110, 0, inset.Y - 58)
+end)
+
 TextButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 TextButton.Text = "Wall Hop Off"
 TextButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -31,12 +38,6 @@ local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 10)
 UICorner.Parent = TextButton
 
--- POSIÇÃO (30px pra esquerda do anterior)
-RunService.RenderStepped:Connect(function()
-    local inset = GuiService:GetGuiInset()
-    TextButton.Position = UDim2.new(0, 140, 0, inset.Y - 58)
-end)
-
 -- --- VARIÁVEIS ---
 local isWallHopEnabled = false
 local isFlicking = false
@@ -44,7 +45,7 @@ local lastFlickTime = 0
 
 local Camera = workspace.CurrentCamera
 
--- --- FLICK AJUSTADO (mantido bom/visível) ---
+-- --- FLICK AJUSTADO (SEU PADRÃO ATUAL) ---
 local function performVideoFlick()
     if isFlicking then return end
     isFlicking = true
@@ -62,7 +63,7 @@ local function performVideoFlick()
 
     local startCFrame = Camera.CFrame
 
-    -- 45° (mantido como você ajustou)
+    -- 45° direita (como estava funcionando melhor)
     Camera.CFrame = startCFrame * CFrame.Angles(0, math.rad(45), 0)
 
     task.wait(0.04)
@@ -72,7 +73,7 @@ local function performVideoFlick()
     isFlicking = false
 end
 
--- --- DETECÇÃO ORIGINAL (IGUAL AO SEU PRIMEIRO SCRIPT) ---
+-- --- DETECÇÃO ORIGINAL (INTACTA) ---
 local lastHitInstance = nil
 
 RunService.Heartbeat:Connect(function()
@@ -113,4 +114,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
-print("Auto Wall Hop (ORIGINAL RESTORED + FLICK) Loaded!")
+print("Auto Wall Hop (ORIGINAL TRUE + FLICK) Loaded!")
