@@ -1,7 +1,7 @@
 --[[
     Auto Wall Hop (FINAL TRYHARD)
     - 45° direita (invertido proposital)
-    - retorno mais visível (0.04)
+    - retorno MUITO rápido (levemente ajustado)
     - botão +60px mais alto
 ]]
 
@@ -44,7 +44,7 @@ local lastFlickTime = 0
 
 local Camera = workspace.CurrentCamera
 
--- --- FLICK TRYHARD ---
+-- --- FLICK TRYHARD (RÁPIDO + DIREITA) ---
 local function performVideoFlick()
     if isFlicking then return end
     isFlicking = true
@@ -65,14 +65,14 @@ local function performVideoFlick()
 
     local startCFrame = Camera.CFrame
 
-    -- 45° direita
+    -- 45° DIREITA (invertido)
     local rotation = CFrame.Angles(0, math.rad(45), 0)
     Camera.CFrame = startCFrame * rotation
 
-    -- tempo mais visível
-    task.wait(0.04)
+    -- tempo ajustado (flick levemente mais lento)
+    task.wait(0.035)
 
-    -- volta
+    -- VOLTA
     Camera.CFrame = startCFrame
 
     isFlicking = false
