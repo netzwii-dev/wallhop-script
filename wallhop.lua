@@ -1,10 +1,6 @@
 --[[
     Auto Wall Hop Script (Video Recreation Version)
-    - Flick 45° direita
-    - Tempo: 0.038
-    - Botão travado (sem drag)
-    - Posição fixa abaixo do chat
-    + Double Jump Manual (3s cooldown - método correto)
+    + Air Jump Avançado (3s cooldown)
 ]]
 
 local Players = game:GetService("Players")
@@ -35,7 +31,6 @@ local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 12)
 UICorner.Parent = TextButton
 
--- 🔒 posição travada
 RunService.RenderStepped:Connect(function()
     local inset = GuiService:GetGuiInset()
     TextButton.Position = UDim2.new(0, 150, 0, inset.Y - 58)
@@ -48,10 +43,42 @@ local lastFlickTime = 0
 local Camera = workspace.CurrentCamera
 
 -- =========================
--- DOUBLE JUMP VARS
+-- AIR JUMP AVANÇADO
 -- =========================
-local doubleJumpReady = true
-local doubleJumpUsed = false
+local airJumpReady = true
+local airJumpUsed = false
+
+UserInputService.JumpRequest:Connect(function()
+    if not isWallHopEnabled then return end
+
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChild("Humanoid")
+    if not hrp or not hum then return end
+
+    -- só no ar
+    if hum.FloorMaterial == Enum.Material.Air then
+        
+        if airJumpReady and not airJumpUsed then
+            airJumpUsed = true
+            airJumpReady = false
+
+            -- 🚀 impulso avançado (funciona mesmo com anti-cheat leve)
+            hrp.Velocity = Vector3.new(
+                hrp.Velocity.X,
+                65, -- força do pulo (ajustável)
+                hrp.Velocity.Z
+            )
+
+            -- cooldown 3s
+            task.delay(3, function()
+                airJumpReady = true
+            end)
+        end
+    else
+        airJumpUsed = false
+    end
+end)
 
 -- 🎯 Flick 45°
 local function performVideoFlick()
@@ -59,19 +86,15 @@ local function performVideoFlick()
     isFlicking = true
     
     local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChild("Humanoid")
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hum or not hrp then
+    if not hrp then
         isFlicking = false
         return
     end
 
-    -- ❌ REMOVIDO pulo automático
-
-    -- boost (mantido igual)
+    -- boost original
     hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
 
-    -- flick humano com variação (40% rápido)
     local startCFrame = Camera.CFrame
     local targetCFrame = startCFrame * CFrame.Angles(0, math.rad(45), 0)
 
@@ -135,34 +158,6 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- =========================
--- DOUBLE JUMP (MÉTODO CORRETO)
--- =========================
-UserInputService.JumpRequest:Connect(function()
-    if not isWallHopEnabled then return end
-    
-    local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChild("Humanoid")
-    if not hum then return end
-
-    if hum.FloorMaterial == Enum.Material.Air then
-        
-        if doubleJumpReady and not doubleJumpUsed then
-            doubleJumpUsed = true
-            doubleJumpReady = false
-
-            -- ✅ usa sistema real do jogo
-            hum.Jump = true
-
-            task.delay(3, function()
-                doubleJumpReady = true
-            end)
-        end
-    else
-        doubleJumpUsed = false
-    end
-end)
-
 -- toggle botão
 TextButton.MouseButton1Click:Connect(function()
     isWallHopEnabled = not isWallHopEnabled
@@ -170,4 +165,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
-print("Video Style Auto Wall Hop Loaded! + Double Jump FIX")
+print("WallHop + AirJump Avançado Loaded 🚀")
