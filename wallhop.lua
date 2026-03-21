@@ -97,8 +97,8 @@ local function performVideoFlick()
     end
 
     hum:ChangeState(Enum.HumanoidStateType.Jumping)
-    -- AJUSTE AQUI (52 → 48)
-    hrp.Velocity = Vector3.new(hrp.Velocity.X, 48, hrp.Velocity.Z)
+    -- AJUSTE FINAL (48 → 45)
+    hrp.Velocity = Vector3.new(hrp.Velocity.X, 45, hrp.Velocity.Z)
 
     local startCFrame = Camera.CFrame
     local targetCFrame = startCFrame * CFrame.Angles(0, math.rad(45), 0)
