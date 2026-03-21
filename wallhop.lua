@@ -97,7 +97,8 @@ local function performVideoFlick()
     end
 
     hum:ChangeState(Enum.HumanoidStateType.Jumping)
-    hrp.Velocity = Vector3.new(hrp.Velocity.X, 52, hrp.Velocity.Z)
+    -- AJUSTE AQUI (52 → 48)
+    hrp.Velocity = Vector3.new(hrp.Velocity.X, 48, hrp.Velocity.Z)
 
     local startCFrame = Camera.CFrame
     local targetCFrame = startCFrame * CFrame.Angles(0, math.rad(45), 0)
@@ -139,7 +140,6 @@ RunService.Heartbeat:Connect(function()
     params.FilterDescendantsInstances = {char}
     params.FilterType = Enum.RaycastFilterType.Exclude
 
-    -- direção horizontal (ignora Y da câmera)
     local look = Camera.CFrame.LookVector
     local horizontal = Vector3.new(look.X, 0, look.Z)
 
@@ -148,10 +148,8 @@ RunService.Heartbeat:Connect(function()
     end
 
     local direction = horizontal * 3
-
     local result = nil
 
-    -- MULTI-RAY (pé, meio, acima)
     local offsets = {
         Vector3.new(0, -2.2, 0),
         Vector3.new(0, -1.2, 0),
@@ -184,7 +182,8 @@ end)
 -- TOGGLE
 TextButton.MouseButton1Click:Connect(function()
     isWallHopEnabled = not isWallHopEnabled
-    TextButton.Text = isWallHopEnabled and "Wall Hop On" or "Wall Hop Off"
+    TextButton.Text = isWallHopEnabled 
+    and "Wall Hop On" or "Wall Hop Off"
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40,40,40) or Color3.fromRGB(0,0,0)
 end)
 
