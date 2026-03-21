@@ -1,6 +1,6 @@
 --[[
     Auto Wall Hop Script (Video Recreation Version)
-    + Air Jump após 3s do WallHop (1 uso)
+    + Double Jump realista (3s cooldown fixo)
 ]]
 
 local Players = game:GetService("Players")
@@ -43,9 +43,10 @@ local lastFlickTime = 0
 local Camera = workspace.CurrentCamera
 
 -- =========================
--- CONTROLE DO AIR JUMP
+-- CONTROLE DOUBLE JUMP
 -- =========================
 local canAirJump = false
+local lastWallHopTime = 0
 
 -- 🎯 Flick 45°
 local function performVideoFlick()
@@ -89,12 +90,9 @@ local function performVideoFlick()
         end
     end
 
-    -- 🔥 libera air jump após 3s
-    task.delay(3, function()
-        if isWallHopEnabled then
-            canAirJump = true
-        end
-    end)
+    -- registra tempo do wallhop
+    lastWallHopTime = tick()
+    canAirJump = false
 
     isFlicking = false
 end
@@ -133,7 +131,18 @@ RunService.Heartbeat:Connect(function()
 end)
 
 -- =========================
--- AIR JUMP (MANUAL)
+-- LIBERAÇÃO APÓS 3s REAL
+-- =========================
+RunService.Heartbeat:Connect(function()
+    if not isWallHopEnabled then return end
+    
+    if not canAirJump and tick() - lastWallHopTime >= 3 then
+        canAirJump = true
+    end
+end)
+
+-- =========================
+-- DOUBLE JUMP (SUAVE)
 -- =========================
 UserInputService.JumpRequest:Connect(function()
     if not isWallHopEnabled then return end
@@ -147,15 +156,15 @@ UserInputService.JumpRequest:Connect(function()
     if hum.FloorMaterial == Enum.Material.Air then
         canAirJump = false
 
-        -- estilo infinite yield (garante funcionamento)
+        -- 🔥 força igual double jump real (ajustada)
         task.spawn(function()
-            for i = 1, 3 do
+            for i = 1, 2 do
                 hrp.Velocity = Vector3.new(
                     hrp.Velocity.X,
-                    60,
+                    48, -- altura ajustada (mais natural)
                     hrp.Velocity.Z
                 )
-                task.wait(0.03)
+                task.wait(0.025)
             end
         end)
     end
@@ -168,4 +177,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
-print("WallHop + AirJump (3s after use) Loaded 🔥")
+print("WallHop + DoubleJump Realista Loaded 🔥")
