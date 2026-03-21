@@ -1,9 +1,8 @@
 --[[
-    Auto Wall Hop (100% Compatible Version)
-    - NÃO interfere no double jump
-    - NÃO força estado de pulo
-    - NÃO altera eixo Y
-    - Só impulso lateral + flick
+    Auto Wall Hop (Balanced Version)
+    - Mantém double jump
+    - Wallhop funcional
+    - Sem interferência agressiva
 ]]
 
 local Players = game:GetService("Players")
@@ -54,14 +53,14 @@ local function performFlick()
         return
     end
 
-    -- ✅ impulso lateral SUAVE (não interfere no pulo)
+    local vel = hrp.Velocity
     local look = Camera.CFrame.LookVector
-    local currentVel = hrp.Velocity
 
+    -- 🔥 impulso equilibrado
     hrp.Velocity = Vector3.new(
-        currentVel.X + (look.X * 18),
-        currentVel.Y,
-        currentVel.Z + (look.Z * 18)
+        vel.X + (look.X * 20),     -- lateral
+        vel.Y + 18,                -- 🔑 boost vertical leve (incremental!)
+        vel.Z + (look.Z * 20)
     )
 
     -- 🎯 flick
@@ -71,7 +70,6 @@ local function performFlick()
     local fastFlick = math.random() < 0.4
 
     Camera.CFrame = targetCFrame
-
     task.wait(fastFlick and 0.012 or 0.018)
 
     local steps = fastFlick and 4 or 6
@@ -95,8 +93,8 @@ RunService.Heartbeat:Connect(function()
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
 
-    -- ✅ só ativa se estiver caindo (respeita double jump)
-    if hrp.Velocity.Y > -2 then return end
+    -- só ativa caindo
+    if hrp.Velocity.Y > -1 then return end
 
     local raycastParams = RaycastParams.new()
     raycastParams.FilterDescendantsInstances = {char}
@@ -110,7 +108,7 @@ RunService.Heartbeat:Connect(function()
 
     if result and result.Instance and result.Instance.CanCollide then
         if lastHitInstance and lastHitInstance ~= result.Instance then
-            if tick() - lastFlickTime > 0.08 then
+            if tick() - lastFlickTime > 0.07 then
                 lastFlickTime = tick()
                 performFlick()
             end
@@ -128,4 +126,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40,40,40) or Color3.fromRGB(0,0,0)
 end)
 
-print("WallHop 100% Compatible Loaded")
+print("WallHop Balanced Loaded")
