@@ -1,9 +1,9 @@
 --[[
-    Auto Wall Hop Script (Video Recreation Version)
-    - Flick 45° direita
-    - Tempo: 0.038
-    - Botão travado (sem drag)
-    - Posição fixa abaixo do chat
+    Auto Wall Hop (100% Compatible Version)
+    - NÃO interfere no double jump
+    - NÃO força estado de pulo
+    - NÃO altera eixo Y
+    - Só impulso lateral + flick
 ]]
 
 local Players = game:GetService("Players")
@@ -11,7 +11,7 @@ local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local GuiService = game:GetService("GuiService")
 
--- --- UI ---
+-- UI
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local ScreenGui = Instance.new("ScreenGui")
@@ -20,11 +20,10 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
 local TextButton = Instance.new("TextButton")
-TextButton.Name = "WallHopToggleButton"
 TextButton.Size = UDim2.new(0, 140, 0, 50)
 TextButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 TextButton.Text = "Wall Hop Off"
-TextButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+TextButton.TextColor3 = Color3.fromRGB(255,255,255)
 TextButton.Font = Enum.Font.GothamBold
 TextButton.TextScaled = true
 TextButton.Parent = ScreenGui
@@ -38,36 +37,34 @@ RunService.RenderStepped:Connect(function()
     TextButton.Position = UDim2.new(0, 150, 0, inset.Y - 58)
 end)
 
--- --- LOGIC ---
+-- LOGIC
 local isWallHopEnabled = false
 local isFlicking = false
 local lastFlickTime = 0
 local Camera = workspace.CurrentCamera
 
-local function performVideoFlick()
+local function performFlick()
     if isFlicking then return end
     isFlicking = true
-    
+
     local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChild("Humanoid")
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hum or not hrp then
+    if not hrp then
         isFlicking = false
         return
     end
 
-    -- jump
-    hum:ChangeState(Enum.HumanoidStateType.Jumping)
-
-    -- 🔥 AQUI FOI ALTERADO (sem mexer no Y)
+    -- ✅ impulso lateral SUAVE (não interfere no pulo)
     local look = Camera.CFrame.LookVector
+    local currentVel = hrp.Velocity
+
     hrp.Velocity = Vector3.new(
-        look.X * 35,
-        hrp.Velocity.Y,
-        look.Z * 35
+        currentVel.X + (look.X * 18),
+        currentVel.Y,
+        currentVel.Z + (look.Z * 18)
     )
 
-    -- flick
+    -- 🎯 flick
     local startCFrame = Camera.CFrame
     local targetCFrame = startCFrame * CFrame.Angles(0, math.rad(45), 0)
 
@@ -75,24 +72,14 @@ local function performVideoFlick()
 
     Camera.CFrame = targetCFrame
 
-    if fastFlick then
-        task.wait(0.012 + math.random() * 0.003)
-    else
-        task.wait(0.018 + math.random() * 0.004)
-    end
+    task.wait(fastFlick and 0.012 or 0.018)
 
     local steps = fastFlick and 4 or 6
 
     for i = 1, steps do
-        local curve = fastFlick and 1.8 or (2 + math.random() * 0.3)
-        local alpha = (i / steps) ^ curve
+        local alpha = (i / steps) ^ (fastFlick and 1.8 or 2)
         Camera.CFrame = targetCFrame:Lerp(startCFrame, alpha)
-
-        if fastFlick then
-            task.wait(0.004 + math.random() * 0.001)
-        else
-            task.wait(0.006 + math.random() * 0.002)
-        end
+        task.wait(fastFlick and 0.004 or 0.006)
     end
 
     isFlicking = false
@@ -103,10 +90,13 @@ local lastHitInstance = nil
 
 RunService.Heartbeat:Connect(function()
     if not isWallHopEnabled then return end
-    
+
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
+
+    -- ✅ só ativa se estiver caindo (respeita double jump)
+    if hrp.Velocity.Y > -2 then return end
 
     local raycastParams = RaycastParams.new()
     raycastParams.FilterDescendantsInstances = {char}
@@ -120,9 +110,9 @@ RunService.Heartbeat:Connect(function()
 
     if result and result.Instance and result.Instance.CanCollide then
         if lastHitInstance and lastHitInstance ~= result.Instance then
-            if hrp.Velocity.Y < 0 and tick() - lastFlickTime > 0.065 then
+            if tick() - lastFlickTime > 0.08 then
                 lastFlickTime = tick()
-                performVideoFlick()
+                performFlick()
             end
         end
         lastHitInstance = result.Instance
@@ -131,11 +121,11 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- toggle botão
+-- botão
 TextButton.MouseButton1Click:Connect(function()
     isWallHopEnabled = not isWallHopEnabled
     TextButton.Text = isWallHopEnabled and "Wall Hop On" or "Wall Hop Off"
-    TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
+    TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40,40,40) or Color3.fromRGB(0,0,0)
 end)
 
-print("Video Style Auto Wall Hop Loaded!")
+print("WallHop 100% Compatible Loaded")
