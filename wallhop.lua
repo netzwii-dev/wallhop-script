@@ -1,14 +1,17 @@
 --[[
-    Auto Wall Hop Script (Advanced Fake Ground)
-    - Script original mantido
-    - Fake ground REAL (funciona com cooldown)
+    Auto Wall Hop Script (Mobile Jump Hook)
+    - Wallhop original mantido
+    - Double jump via input hook
+    - Compatível com celular
 ]]
 
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local GuiService = game:GetService("GuiService")
 
+-- UI
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local ScreenGui = Instance.new("ScreenGui")
@@ -17,10 +20,11 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
 local TextButton = Instance.new("TextButton")
+TextButton.Name = "WallHopToggleButton"
 TextButton.Size = UDim2.new(0, 140, 0, 50)
 TextButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 TextButton.Text = "Wall Hop Off"
-TextButton.TextColor3 = Color3.fromRGB(255,255,255)
+TextButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 TextButton.Font = Enum.Font.GothamBold
 TextButton.TextScaled = true
 TextButton.Parent = ScreenGui
@@ -39,21 +43,35 @@ local isFlicking = false
 local lastFlickTime = 0
 local Camera = workspace.CurrentCamera
 
--- 🔥 FAKE GROUND AVANÇADO
-local function fakeGround(hum, hrp)
-    -- micro step pra baixo (simula contato físico)
-    hrp.CFrame = hrp.CFrame - Vector3.new(0, 0.15, 0)
+-- 🔥 CONTROLE DE DOUBLE JUMP (cooldown simulado)
+local lastJumpTime = 0
+local jumpCooldown = 5 -- segundos
 
-    -- força estado de chão real
-    hum:ChangeState(Enum.HumanoidStateType.Running)
+-- HOOK DE INPUT (FUNCIONA NO MOBILE)
+UserInputService.JumpRequest:Connect(function()
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChild("Humanoid")
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
 
-    -- mantém por alguns frames (IMPORTANTE)
-    task.wait()
-    task.wait()
+    if not hum or not hrp then return end
 
-    -- volta pro ar
-    hum:ChangeState(Enum.HumanoidStateType.Freefall)
-end
+    -- se estiver no ar (wallhop acontecendo)
+    if hrp.Velocity.Y ~= 0 then
+        if tick() - lastJumpTime >= jumpCooldown then
+            lastJumpTime = tick()
+
+            -- 🔥 força pulo REAL
+            hum:ChangeState(Enum.HumanoidStateType.Jumping)
+
+            -- pequeno boost pra garantir
+            hrp.Velocity = Vector3.new(
+                hrp.Velocity.X,
+                50,
+                hrp.Velocity.Z
+            )
+        end
+    end
+end)
 
 local function performVideoFlick()
     if isFlicking then return end
@@ -67,16 +85,13 @@ local function performVideoFlick()
         return
     end
 
-    -- 🔥 fake ground inteligente
-    fakeGround(hum, hrp)
-
     -- jump original
     hum:ChangeState(Enum.HumanoidStateType.Jumping)
 
     -- boost original
     hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
 
-    -- flick original
+    -- flick
     local startCFrame = Camera.CFrame
     local targetCFrame = startCFrame * CFrame.Angles(0, math.rad(45), 0)
 
@@ -146,4 +161,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.Text = isWallHopEnabled and "Wall Hop On" or "Wall Hop Off"
 end)
 
-print("WallHop Advanced Fake Ground Loaded")
+print("WallHop Mobile Hook Loaded")
