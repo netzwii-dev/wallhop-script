@@ -1,6 +1,6 @@
 --[[
     Auto Wall Hop Script (Video Recreation Version)
-    + Double Jump realista (3s cooldown fixo)
+    + Double Jump REAL (cooldown fixo 3s)
 ]]
 
 local Players = game:GetService("Players")
@@ -43,10 +43,10 @@ local lastFlickTime = 0
 local Camera = workspace.CurrentCamera
 
 -- =========================
--- CONTROLE DOUBLE JUMP
+-- DOUBLE JUMP CONTROL
 -- =========================
 local canAirJump = false
-local lastWallHopTime = 0
+local lastJumpTime = 0
 
 -- 🎯 Flick 45°
 local function performVideoFlick()
@@ -60,7 +60,6 @@ local function performVideoFlick()
         return
     end
 
-    -- boost original
     hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
 
     local startCFrame = Camera.CFrame
@@ -70,29 +69,15 @@ local function performVideoFlick()
 
     Camera.CFrame = targetCFrame
 
-    if fastFlick then
-        task.wait(0.012 + math.random() * 0.003)
-    else
-        task.wait(0.018 + math.random() * 0.004)
-    end
+    task.wait(fastFlick and 0.012 or 0.018)
 
     local steps = fastFlick and 4 or 6
 
     for i = 1, steps do
-        local curve = fastFlick and 1.8 or (2 + math.random() * 0.3)
-        local alpha = (i / steps) ^ curve
+        local alpha = (i / steps) ^ (fastFlick and 1.8 or 2)
         Camera.CFrame = targetCFrame:Lerp(startCFrame, alpha)
-
-        if fastFlick then
-            task.wait(0.004 + math.random() * 0.001)
-        else
-            task.wait(0.006 + math.random() * 0.002)
-        end
+        task.wait(fastFlick and 0.004 or 0.006)
     end
-
-    -- registra tempo do wallhop
-    lastWallHopTime = tick()
-    canAirJump = false
 
     isFlicking = false
 end
@@ -131,18 +116,18 @@ RunService.Heartbeat:Connect(function()
 end)
 
 -- =========================
--- LIBERAÇÃO APÓS 3s REAL
+-- LIBERAÇÃO GLOBAL 3s
 -- =========================
 RunService.Heartbeat:Connect(function()
     if not isWallHopEnabled then return end
     
-    if not canAirJump and tick() - lastWallHopTime >= 3 then
+    if tick() - lastJumpTime >= 3 then
         canAirJump = true
     end
 end)
 
 -- =========================
--- DOUBLE JUMP (SUAVE)
+-- DOUBLE JUMP REALISTA
 -- =========================
 UserInputService.JumpRequest:Connect(function()
     if not isWallHopEnabled then return end
@@ -155,18 +140,14 @@ UserInputService.JumpRequest:Connect(function()
 
     if hum.FloorMaterial == Enum.Material.Air then
         canAirJump = false
+        lastJumpTime = tick()
 
-        -- 🔥 força igual double jump real (ajustada)
-        task.spawn(function()
-            for i = 1, 2 do
-                hrp.Velocity = Vector3.new(
-                    hrp.Velocity.X,
-                    48, -- altura ajustada (mais natural)
-                    hrp.Velocity.Z
-                )
-                task.wait(0.025)
-            end
-        end)
+        -- 🔥 impulso SUAVE (igual double jump real)
+        hrp.Velocity = Vector3.new(
+            hrp.Velocity.X,
+            38, -- altura bem mais natural
+            hrp.Velocity.Z
+        )
     end
 end)
 
@@ -177,4 +158,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
-print("WallHop + DoubleJump Realista Loaded 🔥")
+print("WallHop + DoubleJump FINAL FIX 🔥")
