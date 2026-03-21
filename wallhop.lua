@@ -1,8 +1,7 @@
 --[[
-    Auto Wall Hop (Balanced Version)
-    - Mantém double jump
-    - Wallhop funcional
-    - Sem interferência agressiva
+    Auto Wall Hop (Original Fixed)
+    - Mantém wallhop original
+    - Remove quebra de double jump
 ]]
 
 local Players = game:GetService("Players")
@@ -42,10 +41,10 @@ local isFlicking = false
 local lastFlickTime = 0
 local Camera = workspace.CurrentCamera
 
-local function performFlick()
+local function performVideoFlick()
     if isFlicking then return end
     isFlicking = true
-
+    
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then
@@ -53,15 +52,8 @@ local function performFlick()
         return
     end
 
-    local vel = hrp.Velocity
-    local look = Camera.CFrame.LookVector
-
-    -- 🔥 impulso equilibrado
-    hrp.Velocity = Vector3.new(
-        vel.X + (look.X * 20),     -- lateral
-        vel.Y + 18,                -- 🔑 boost vertical leve (incremental!)
-        vel.Z + (look.Z * 20)
-    )
+    -- 🔥 BOOST ORIGINAL (mantido)
+    hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
 
     -- 🎯 flick
     local startCFrame = Camera.CFrame
@@ -70,14 +62,25 @@ local function performFlick()
     local fastFlick = math.random() < 0.4
 
     Camera.CFrame = targetCFrame
-    task.wait(fastFlick and 0.012 or 0.018)
+
+    if fastFlick then
+        task.wait(0.012 + math.random() * 0.003)
+    else
+        task.wait(0.018 + math.random() * 0.004)
+    end
 
     local steps = fastFlick and 4 or 6
 
     for i = 1, steps do
-        local alpha = (i / steps) ^ (fastFlick and 1.8 or 2)
+        local curve = fastFlick and 1.8 or (2 + math.random() * 0.3)
+        local alpha = (i / steps) ^ curve
         Camera.CFrame = targetCFrame:Lerp(startCFrame, alpha)
-        task.wait(fastFlick and 0.004 or 0.006)
+
+        if fastFlick then
+            task.wait(0.004 + math.random() * 0.001)
+        else
+            task.wait(0.006 + math.random() * 0.002)
+        end
     end
 
     isFlicking = false
@@ -88,13 +91,10 @@ local lastHitInstance = nil
 
 RunService.Heartbeat:Connect(function()
     if not isWallHopEnabled then return end
-
+    
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
-
-    -- só ativa caindo
-    if hrp.Velocity.Y > -1 then return end
 
     local raycastParams = RaycastParams.new()
     raycastParams.FilterDescendantsInstances = {char}
@@ -108,9 +108,9 @@ RunService.Heartbeat:Connect(function()
 
     if result and result.Instance and result.Instance.CanCollide then
         if lastHitInstance and lastHitInstance ~= result.Instance then
-            if tick() - lastFlickTime > 0.07 then
+            if hrp.Velocity.Y < 0 and tick() - lastFlickTime > 0.065 then
                 lastFlickTime = tick()
-                performFlick()
+                performVideoFlick()
             end
         end
         lastHitInstance = result.Instance
@@ -126,4 +126,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40,40,40) or Color3.fromRGB(0,0,0)
 end)
 
-print("WallHop Balanced Loaded")
+print("WallHop Original Fixed Loaded")
