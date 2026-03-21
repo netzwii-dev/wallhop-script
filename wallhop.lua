@@ -4,7 +4,7 @@
     - Tempo: 0.038
     - Botão travado (sem drag)
     - Posição fixa abaixo do chat
-    + Double Jump Manual (3s cooldown)
+    + Double Jump Manual (3s cooldown - método correto)
 ]]
 
 local Players = game:GetService("Players")
@@ -66,7 +66,7 @@ local function performVideoFlick()
         return
     end
 
-    -- ❌ REMOVIDO: hum:ChangeState(Enum.HumanoidStateType.Jumping)
+    -- ❌ REMOVIDO pulo automático
 
     -- boost (mantido igual)
     hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
@@ -77,17 +77,14 @@ local function performVideoFlick()
 
     local fastFlick = math.random() < 0.4
 
-    -- ida rápida
     Camera.CFrame = targetCFrame
 
-    -- pausa
     if fastFlick then
         task.wait(0.012 + math.random() * 0.003)
     else
         task.wait(0.018 + math.random() * 0.004)
     end
 
-    -- configs dinâmicas
     local steps = fastFlick and 4 or 6
 
     for i = 1, steps do
@@ -139,7 +136,7 @@ RunService.Heartbeat:Connect(function()
 end)
 
 -- =========================
--- DOUBLE JUMP (MANUAL)
+-- DOUBLE JUMP (MÉTODO CORRETO)
 -- =========================
 UserInputService.JumpRequest:Connect(function()
     if not isWallHopEnabled then return end
@@ -154,9 +151,9 @@ UserInputService.JumpRequest:Connect(function()
             doubleJumpUsed = true
             doubleJumpReady = false
 
-            hum:ChangeState(Enum.HumanoidStateType.Jumping)
+            -- ✅ usa sistema real do jogo
+            hum.Jump = true
 
-            -- cooldown 3s
             task.delay(3, function()
                 doubleJumpReady = true
             end)
@@ -173,4 +170,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
-print("Video Style Auto Wall Hop Loaded! + Double Jump")
+print("Video Style Auto Wall Hop Loaded! + Double Jump FIX")
