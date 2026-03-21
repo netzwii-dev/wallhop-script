@@ -1,7 +1,7 @@
 --[[
-    Auto Wall Hop (Fake Ground Fix)
-    - Wallhop original mantido
-    - Double jump recarrega na parede
+    Auto Wall Hop Script (Advanced Fake Ground)
+    - Script original mantido
+    - Fake ground REAL (funciona com cooldown)
 ]]
 
 local Players = game:GetService("Players")
@@ -39,11 +39,19 @@ local isFlicking = false
 local lastFlickTime = 0
 local Camera = workspace.CurrentCamera
 
--- 🔥 FAKE GROUND
-local function simulateGround(hum)
-    -- força estado de "no chão" por 1 frame
-    hum:ChangeState(Enum.HumanoidStateType.Landed)
+-- 🔥 FAKE GROUND AVANÇADO
+local function fakeGround(hum, hrp)
+    -- micro step pra baixo (simula contato físico)
+    hrp.CFrame = hrp.CFrame - Vector3.new(0, 0.15, 0)
+
+    -- força estado de chão real
+    hum:ChangeState(Enum.HumanoidStateType.Running)
+
+    -- mantém por alguns frames (IMPORTANTE)
     task.wait()
+    task.wait()
+
+    -- volta pro ar
     hum:ChangeState(Enum.HumanoidStateType.Freefall)
 end
 
@@ -59,26 +67,41 @@ local function performVideoFlick()
         return
     end
 
-    -- 🔥 simula chão antes do wallhop
-    simulateGround(hum)
+    -- 🔥 fake ground inteligente
+    fakeGround(hum, hrp)
 
-    -- jump normal
+    -- jump original
     hum:ChangeState(Enum.HumanoidStateType.Jumping)
 
     -- boost original
     hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
 
-    -- flick
+    -- flick original
     local startCFrame = Camera.CFrame
     local targetCFrame = startCFrame * CFrame.Angles(0, math.rad(45), 0)
 
-    Camera.CFrame = targetCFrame
-    task.wait(0.015)
+    local fastFlick = math.random() < 0.4
 
-    for i = 1, 5 do
-        local alpha = (i / 5) ^ 2
+    Camera.CFrame = targetCFrame
+
+    if fastFlick then
+        task.wait(0.012 + math.random() * 0.003)
+    else
+        task.wait(0.018 + math.random() * 0.004)
+    end
+
+    local steps = fastFlick and 4 or 6
+
+    for i = 1, steps do
+        local curve = fastFlick and 1.8 or (2 + math.random() * 0.3)
+        local alpha = (i / steps) ^ curve
         Camera.CFrame = targetCFrame:Lerp(startCFrame, alpha)
-        task.wait(0.005)
+
+        if fastFlick then
+            task.wait(0.004 + math.random() * 0.001)
+        else
+            task.wait(0.006 + math.random() * 0.002)
+        end
     end
 
     isFlicking = false
@@ -123,4 +146,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.Text = isWallHopEnabled and "Wall Hop On" or "Wall Hop Off"
 end)
 
-print("WallHop Fake Ground Loaded")
+print("WallHop Advanced Fake Ground Loaded")
