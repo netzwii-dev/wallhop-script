@@ -1,6 +1,6 @@
 --[[
     Auto Wall Hop Script (Video Recreation Version)
-    + Air Jump Avançado (3s cooldown)
+    + Air Jump após 3s do WallHop (1 uso)
 ]]
 
 local Players = game:GetService("Players")
@@ -43,42 +43,9 @@ local lastFlickTime = 0
 local Camera = workspace.CurrentCamera
 
 -- =========================
--- AIR JUMP AVANÇADO
+-- CONTROLE DO AIR JUMP
 -- =========================
-local airJumpReady = true
-local airJumpUsed = false
-
-UserInputService.JumpRequest:Connect(function()
-    if not isWallHopEnabled then return end
-
-    local char = LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    local hum = char and char:FindFirstChild("Humanoid")
-    if not hrp or not hum then return end
-
-    -- só no ar
-    if hum.FloorMaterial == Enum.Material.Air then
-        
-        if airJumpReady and not airJumpUsed then
-            airJumpUsed = true
-            airJumpReady = false
-
-            -- 🚀 impulso avançado (funciona mesmo com anti-cheat leve)
-            hrp.Velocity = Vector3.new(
-                hrp.Velocity.X,
-                65, -- força do pulo (ajustável)
-                hrp.Velocity.Z
-            )
-
-            -- cooldown 3s
-            task.delay(3, function()
-                airJumpReady = true
-            end)
-        end
-    else
-        airJumpUsed = false
-    end
-end)
+local canAirJump = false
 
 -- 🎯 Flick 45°
 local function performVideoFlick()
@@ -122,6 +89,13 @@ local function performVideoFlick()
         end
     end
 
+    -- 🔥 libera air jump após 3s
+    task.delay(3, function()
+        if isWallHopEnabled then
+            canAirJump = true
+        end
+    end)
+
     isFlicking = false
 end
 
@@ -158,6 +132,35 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
+-- =========================
+-- AIR JUMP (MANUAL)
+-- =========================
+UserInputService.JumpRequest:Connect(function()
+    if not isWallHopEnabled then return end
+    if not canAirJump then return end
+
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChild("Humanoid")
+    if not hrp or not hum then return end
+
+    if hum.FloorMaterial == Enum.Material.Air then
+        canAirJump = false
+
+        -- estilo infinite yield (garante funcionamento)
+        task.spawn(function()
+            for i = 1, 3 do
+                hrp.Velocity = Vector3.new(
+                    hrp.Velocity.X,
+                    60,
+                    hrp.Velocity.Z
+                )
+                task.wait(0.03)
+            end
+        end)
+    end
+end)
+
 -- toggle botão
 TextButton.MouseButton1Click:Connect(function()
     isWallHopEnabled = not isWallHopEnabled
@@ -165,4 +168,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
-print("WallHop + AirJump Avançado Loaded 🚀")
+print("WallHop + AirJump (3s after use) Loaded 🔥")
