@@ -1,7 +1,7 @@
 --[[
-    Auto Wall Hop (Original Fixed)
-    - Mantém wallhop original
-    - Remove quebra de double jump
+    Auto Wall Hop Script (Hooked Jump Version)
+    - Wallhop original mantido
+    - Double jump liberado via hook
 ]]
 
 local Players = game:GetService("Players")
@@ -18,10 +18,11 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
 local TextButton = Instance.new("TextButton")
+TextButton.Name = "WallHopToggleButton"
 TextButton.Size = UDim2.new(0, 140, 0, 50)
 TextButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 TextButton.Text = "Wall Hop Off"
-TextButton.TextColor3 = Color3.fromRGB(255,255,255)
+TextButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 TextButton.Font = Enum.Font.GothamBold
 TextButton.TextScaled = true
 TextButton.Parent = ScreenGui
@@ -41,21 +42,38 @@ local isFlicking = false
 local lastFlickTime = 0
 local Camera = workspace.CurrentCamera
 
+local function resetJump(hum)
+    -- 🔥 HOOK: reativa possibilidade de pulo no ar
+    hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+    hum:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
+end
+
 local function performVideoFlick()
     if isFlicking then return end
     isFlicking = true
     
     local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChild("Humanoid")
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then
+    if not hum or not hrp then
         isFlicking = false
         return
     end
 
-    -- 🔥 BOOST ORIGINAL (mantido)
+    -- jump (mantido)
+    hum:ChangeState(Enum.HumanoidStateType.Jumping)
+
+    -- boost original
     hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
 
-    -- 🎯 flick
+    -- 🔥 HOOK AQUI
+    task.delay(0.05, function()
+        if hum then
+            resetJump(hum)
+        end
+    end)
+
+    -- flick
     local startCFrame = Camera.CFrame
     local targetCFrame = startCFrame * CFrame.Angles(0, math.rad(45), 0)
 
@@ -123,7 +141,7 @@ end)
 TextButton.MouseButton1Click:Connect(function()
     isWallHopEnabled = not isWallHopEnabled
     TextButton.Text = isWallHopEnabled and "Wall Hop On" or "Wall Hop Off"
-    TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40,40,40) or Color3.fromRGB(0,0,0)
+    TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
-print("WallHop Original Fixed Loaded")
+print("WallHop Hooked Loaded")
