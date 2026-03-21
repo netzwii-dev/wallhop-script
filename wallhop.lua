@@ -1,7 +1,7 @@
 --[[
-    Auto Wall Hop Script (Hooked Jump Version)
+    Auto Wall Hop (Fake Ground Fix)
     - Wallhop original mantido
-    - Double jump liberado via hook
+    - Double jump recarrega na parede
 ]]
 
 local Players = game:GetService("Players")
@@ -9,7 +9,6 @@ local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local GuiService = game:GetService("GuiService")
 
--- UI
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local ScreenGui = Instance.new("ScreenGui")
@@ -18,17 +17,15 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
 local TextButton = Instance.new("TextButton")
-TextButton.Name = "WallHopToggleButton"
 TextButton.Size = UDim2.new(0, 140, 0, 50)
 TextButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 TextButton.Text = "Wall Hop Off"
-TextButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+TextButton.TextColor3 = Color3.fromRGB(255,255,255)
 TextButton.Font = Enum.Font.GothamBold
 TextButton.TextScaled = true
 TextButton.Parent = ScreenGui
 
 local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 12)
 UICorner.Parent = TextButton
 
 RunService.RenderStepped:Connect(function()
@@ -42,10 +39,12 @@ local isFlicking = false
 local lastFlickTime = 0
 local Camera = workspace.CurrentCamera
 
-local function resetJump(hum)
-    -- 🔥 HOOK: reativa possibilidade de pulo no ar
-    hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
-    hum:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
+-- 🔥 FAKE GROUND
+local function simulateGround(hum)
+    -- força estado de "no chão" por 1 frame
+    hum:ChangeState(Enum.HumanoidStateType.Landed)
+    task.wait()
+    hum:ChangeState(Enum.HumanoidStateType.Freefall)
 end
 
 local function performVideoFlick()
@@ -60,45 +59,26 @@ local function performVideoFlick()
         return
     end
 
-    -- jump (mantido)
+    -- 🔥 simula chão antes do wallhop
+    simulateGround(hum)
+
+    -- jump normal
     hum:ChangeState(Enum.HumanoidStateType.Jumping)
 
     -- boost original
     hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
 
-    -- 🔥 HOOK AQUI
-    task.delay(0.05, function()
-        if hum then
-            resetJump(hum)
-        end
-    end)
-
     -- flick
     local startCFrame = Camera.CFrame
     local targetCFrame = startCFrame * CFrame.Angles(0, math.rad(45), 0)
 
-    local fastFlick = math.random() < 0.4
-
     Camera.CFrame = targetCFrame
+    task.wait(0.015)
 
-    if fastFlick then
-        task.wait(0.012 + math.random() * 0.003)
-    else
-        task.wait(0.018 + math.random() * 0.004)
-    end
-
-    local steps = fastFlick and 4 or 6
-
-    for i = 1, steps do
-        local curve = fastFlick and 1.8 or (2 + math.random() * 0.3)
-        local alpha = (i / steps) ^ curve
+    for i = 1, 5 do
+        local alpha = (i / 5) ^ 2
         Camera.CFrame = targetCFrame:Lerp(startCFrame, alpha)
-
-        if fastFlick then
-            task.wait(0.004 + math.random() * 0.001)
-        else
-            task.wait(0.006 + math.random() * 0.002)
-        end
+        task.wait(0.005)
     end
 
     isFlicking = false
@@ -141,7 +121,6 @@ end)
 TextButton.MouseButton1Click:Connect(function()
     isWallHopEnabled = not isWallHopEnabled
     TextButton.Text = isWallHopEnabled and "Wall Hop On" or "Wall Hop Off"
-    TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
-print("WallHop Hooked Loaded")
+print("WallHop Fake Ground Loaded")
