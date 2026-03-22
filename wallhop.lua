@@ -36,6 +36,8 @@ local isFlicking = false
 local lastFlickTime = 0
 local Camera = workspace.CurrentCamera
 
+local isWallHopping = false
+
 -- DOUBLE JUMP
 local canDoubleJump = false
 local lastDoubleJump = 0
@@ -63,16 +65,20 @@ LocalPlayer.CharacterAdded:Connect(setupCharacter)
 
 -- DOUBLE JUMP INPUT
 UserInputService.JumpRequest:Connect(function()
+    if not isWallHopEnabled then return end
+
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChild("Humanoid")
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hum or not hrp then return end
 
+    if not isWallHopping then return end
+
     if canDoubleJump and tick() - lastDoubleJump > DOUBLE_JUMP_COOLDOWN then
         lastDoubleJump = tick()
         canDoubleJump = false
 
-        hrp.Velocity = Vector3.new(hrp.Velocity.X, 36, hrp.Velocity.Z)
+        hrp.Velocity = Vector3.new(hrp.Velocity.X, 34.5, hrp.Velocity.Z)
         hum:ChangeState(Enum.HumanoidStateType.Jumping)
 
         task.delay(0.18, function()
@@ -88,6 +94,8 @@ local function performVideoFlick()
     if isFlicking then return end
     isFlicking = true
 
+    isWallHopping = true
+
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChild("Humanoid")
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -97,8 +105,7 @@ local function performVideoFlick()
     end
 
     hum:ChangeState(Enum.HumanoidStateType.Jumping)
-    -- AJUSTE FINAL (48 → 45)
-    hrp.Velocity = Vector3.new(hrp.Velocity.X, 45, hrp.Velocity.Z)
+    hrp.Velocity = Vector3.new(hrp.Velocity.X, 44.8, hrp.Velocity.Z)
 
     local startCFrame = Camera.CFrame
     local targetCFrame = startCFrame * CFrame.Angles(0, math.rad(45), 0)
@@ -123,11 +130,24 @@ local function performVideoFlick()
         end
     end)
 
+    task.delay(0.25, function()
+        isWallHopping = false
+    end)
+
     isFlicking = false
 end
 
--- WALL DETECT (MULTI-RAY FIX)
+-- WALL DETECT (AGORA IGNORA PLAYERS)
 local lastHitInstance = nil
+
+local function isPlayerCharacter(instance)
+    if not instance then return false end
+    local model = instance:FindFirstAncestorOfClass("Model")
+    if model and model:FindFirstChildOfClass("Humanoid") then
+        return true
+    end
+    return false
+end
 
 RunService.Heartbeat:Connect(function()
     if not isWallHopEnabled then return end
@@ -161,8 +181,11 @@ RunService.Heartbeat:Connect(function()
         local ray = workspace:Raycast(origin, direction, params)
 
         if ray and ray.Instance and ray.Instance.CanCollide then
-            result = ray
-            break
+            -- 🔴 IGNORA JOGADORES
+            if not isPlayerCharacter(ray.Instance) then
+                result = ray
+                break
+            end
         end
     end
 
@@ -182,9 +205,8 @@ end)
 -- TOGGLE
 TextButton.MouseButton1Click:Connect(function()
     isWallHopEnabled = not isWallHopEnabled
-    TextButton.Text = isWallHopEnabled 
-    and "Wall Hop On" or "Wall Hop Off"
+    TextButton.Text = isWallHopEnabled and "Wall Hop On" or "Wall Hop Off"
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40,40,40) or Color3.fromRGB(0,0,0)
 end)
 
-print("WallHop Loaded (Multi-Ray Fix)")
+print("WallHop Loaded (Sem colisão em players)")
