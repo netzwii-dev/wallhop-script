@@ -43,6 +43,19 @@ local canDoubleJump = false
 local lastDoubleJump = 0
 local DOUBLE_JUMP_COOLDOWN = 3
 
+-- CROUCH CHECK (FTF-LIKE)
+local function isCrouching(hum, hrp)
+    if not hum or not hrp then return false end
+
+    local horizontalSpeed = Vector3.new(hrp.Velocity.X, 0, hrp.Velocity.Z).Magnitude
+
+    if hum.WalkSpeed <= 9 and horizontalSpeed < 10 then
+        return true
+    end
+
+    return false
+end
+
 -- CHARACTER HANDLER
 local function setupCharacter(char)
     local hum = char:WaitForChild("Humanoid")
@@ -154,7 +167,12 @@ RunService.Heartbeat:Connect(function()
 
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
+    local hum = char and char:FindFirstChild("Humanoid")
+
+    if not hrp or not hum then return end
+
+    -- BLOQUEIO AGACHADO
+    if isCrouching(hum, hrp) then return end
 
     local params = RaycastParams.new()
     params.FilterDescendantsInstances = {char}
@@ -167,7 +185,9 @@ RunService.Heartbeat:Connect(function()
         horizontal = horizontal.Unit
     end
 
-    local direction = horizontal * 3
+    -- ALCANCE AJUSTADO
+    local direction = horizontal * 1.8
+
     local result = nil
 
     local offsets = {
@@ -181,7 +201,6 @@ RunService.Heartbeat:Connect(function()
         local ray = workspace:Raycast(origin, direction, params)
 
         if ray and ray.Instance and ray.Instance.CanCollide then
-            -- 🔴 IGNORA JOGADORES
             if not isPlayerCharacter(ray.Instance) then
                 result = ray
                 break
@@ -209,4 +228,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40,40,40) or Color3.fromRGB(0,0,0)
 end)
 
-print("WallHop Loaded (Sem colisão em players)")
+print("WallHop Loaded (1.8 + Crouch FTF)")
