@@ -43,17 +43,14 @@ local canDoubleJump = false
 local lastDoubleJump = 0
 local DOUBLE_JUMP_COOLDOWN = 3
 
--- CROUCH CHECK (FTF-LIKE)
+-- CROUCH CHECK (simples e funcional)
 local function isCrouching(hum, hrp)
     if not hum or not hrp then return false end
 
     local horizontalSpeed = Vector3.new(hrp.Velocity.X, 0, hrp.Velocity.Z).Magnitude
 
-    if hum.WalkSpeed <= 9 and horizontalSpeed < 10 then
-        return true
-    end
-
-    return false
+    -- detecta crouch real (movimento lento)
+    return hum.WalkSpeed <= 9 and horizontalSpeed < 8
 end
 
 -- CHARACTER HANDLER
@@ -150,7 +147,7 @@ local function performVideoFlick()
     isFlicking = false
 end
 
--- WALL DETECT (AGORA IGNORA PLAYERS)
+-- WALL DETECT
 local lastHitInstance = nil
 
 local function isPlayerCharacter(instance)
@@ -171,7 +168,7 @@ RunService.Heartbeat:Connect(function()
 
     if not hrp or not hum then return end
 
-    -- BLOQUEIO AGACHADO
+    -- 🚫 BLOQUEIO AGACHADO
     if isCrouching(hum, hrp) then return end
 
     local params = RaycastParams.new()
@@ -185,8 +182,7 @@ RunService.Heartbeat:Connect(function()
         horizontal = horizontal.Unit
     end
 
-    -- ALCANCE AJUSTADO
-    local direction = horizontal * 1.8
+    local direction = horizontal * 1.55
 
     local result = nil
 
@@ -210,7 +206,7 @@ RunService.Heartbeat:Connect(function()
 
     if result and result.Instance then
         if lastHitInstance and lastHitInstance ~= result.Instance then
-            if hrp.Velocity.Y < -1 and tick() - lastFlickTime > 0.07 then
+            if hrp.Velocity.Y < -2.2 and tick() - lastFlickTime > 0.085 then
                 lastFlickTime = tick()
                 performVideoFlick()
             end
@@ -228,4 +224,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40,40,40) or Color3.fromRGB(0,0,0)
 end)
 
-print("WallHop Loaded (1.8 + Crouch FTF)")
+print("WallHop Loaded (Tryhard + Crouch Fix)")
