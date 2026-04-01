@@ -1,4 +1,4 @@
--- AUTO WALLHOP + DOUBLE JUMP (REFINADO - FIX ANIMAÇÃO)
+-- AUTO WALLHOP + DOUBLE JUMP (REFINADO - FLICK DINÂMICO)
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -38,18 +38,19 @@ local Camera = workspace.CurrentCamera
 
 local isWallHopping = false
 
+-- NOVO (janela após wallhop)
+local lastWallHopTime = 0
+local WALLHOP_GRACE_TIME = 1.5
+
 -- DOUBLE JUMP
 local canDoubleJump = false
 local lastDoubleJump = 0
 local DOUBLE_JUMP_COOLDOWN = 3
 
--- CROUCH CHECK (simples e funcional)
+-- CROUCH CHECK
 local function isCrouching(hum, hrp)
     if not hum or not hrp then return false end
-
     local horizontalSpeed = Vector3.new(hrp.Velocity.X, 0, hrp.Velocity.Z).Magnitude
-
-    -- detecta crouch real (movimento lento)
     return hum.WalkSpeed <= 9 and horizontalSpeed < 8
 end
 
@@ -73,7 +74,7 @@ if LocalPlayer.Character then
 end
 LocalPlayer.CharacterAdded:Connect(setupCharacter)
 
--- DOUBLE JUMP INPUT
+-- DOUBLE JUMP
 UserInputService.JumpRequest:Connect(function()
     if not isWallHopEnabled then return end
 
@@ -82,7 +83,9 @@ UserInputService.JumpRequest:Connect(function()
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hum or not hrp then return end
 
-    if not isWallHopping then return end
+    -- NOVA LÓGICA
+    local stillValid = isWallHopping or (tick() - lastWallHopTime <= WALLHOP_GRACE_TIME)
+    if not stillValid then return end
 
     if canDoubleJump and tick() - lastDoubleJump > DOUBLE_JUMP_COOLDOWN then
         lastDoubleJump = tick()
@@ -99,12 +102,13 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
--- FLICK
+-- FLICK MELHORADO
 local function performVideoFlick()
     if isFlicking then return end
     isFlicking = true
 
     isWallHopping = true
+    lastWallHopTime = tick() -- NOVO
 
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChild("Humanoid")
@@ -118,7 +122,15 @@ local function performVideoFlick()
     hrp.Velocity = Vector3.new(hrp.Velocity.X, 44.8, hrp.Velocity.Z)
 
     local startCFrame = Camera.CFrame
-    local targetCFrame = startCFrame * CFrame.Angles(0, math.rad(45), 0)
+
+    local lookY = startCFrame.LookVector.Y
+    local verticalInfluence = math.clamp(math.abs(lookY), 0, 1)
+
+    local baseAngle = 45
+    local dynamicAngle = baseAngle * (1 - (verticalInfluence * 0.6))
+
+    local flickRotation = CFrame.fromAxisAngle(startCFrame.UpVector, math.rad(dynamicAngle))
+    local targetCFrame = flickRotation * startCFrame
 
     local fastFlick = math.random() < 0.4
 
@@ -147,7 +159,7 @@ local function performVideoFlick()
     isFlicking = false
 end
 
--- WALL DETECT
+-- WALL DETECT (INALTERADO)
 local lastHitInstance = nil
 
 local function isPlayerCharacter(instance)
@@ -168,7 +180,6 @@ RunService.Heartbeat:Connect(function()
 
     if not hrp or not hum then return end
 
-    -- 🚫 BLOQUEIO AGACHADO
     if isCrouching(hum, hrp) then return end
 
     local params = RaycastParams.new()
@@ -224,4 +235,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40,40,40) or Color3.fromRGB(0,0,0)
 end)
 
-print("WallHop Loaded (Tryhard + Crouch Fix)")
+print("WallHop Loaded (com grace time 1.5s)")
