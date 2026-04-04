@@ -1,4 +1,4 @@
--- AUTO WALLHOP + DOUBLE JUMP (ULTRA CLEAN COM FLICK HUMANIZADO + OVERSHOOT)
+-- (Wallhop Humanoid Type - Made by NT)
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -38,6 +38,7 @@ local Camera = workspace.CurrentCamera
 local isWallHopping = false
 local lastWallHopTime = 0
 local WALLHOP_GRACE_TIME = 1.5
+local WALLHOP_COOLDOWN = 0.18
 
 -- DOUBLE JUMP
 local canDoubleJump = false
@@ -130,14 +131,33 @@ local function performVideoFlick()
 
     local baseYaw = hrp.Orientation.Y
     local angle = pickNextFlick()
-    local steps = math.random(7,9)
+
+    -- 95% flick atual / 5% flick rápido
+    local useFastFlick = math.random() < 0.05
+
+    local steps
+    local delayMin
+    local delayMax
+
+    if useFastFlick then
+        -- flick rápido recomendado
+        steps = math.random(4,5)
+        delayMin = 0.0045
+        delayMax = 0.0065
+    else
+        -- flick atual
+        steps = math.random(7,9)
+        delayMin = 0.008
+        delayMax = 0.012
+    end
+
     local baseDelay = 0.01
 
-    -- OVERSHOOT CONFIG
+    -- OVERSHOOT CONFIG (INALTERADO)
     local overshoot = math.rad(math.random(20,30))
     local useOvershoot = math.random() < 0.9
 
-    -- FLICK NORMAL (EXATAMENTE COMO ESTAVA)
+    -- FLICK
     for i = 1, steps do
         local alpha = i / steps
         local curve
@@ -151,13 +171,13 @@ local function performVideoFlick()
         hrp.CFrame = CFrame.new(hrp.Position) * CFrame.Angles(0, math.rad(baseYaw) + offset, 0)
 
         RunService.RenderStepped:Wait()
-        task.wait(baseDelay * (0.8 + math.random()*0.4))
+        task.wait(delayMin + math.random() * (delayMax - delayMin))
     end
 
     -- OVERSHOOT ATRASADO (NÃO INTERFERE NO WALLHOP)
     if useOvershoot then
         task.delay(0.05, function()
-            if not hrp then return end
+            if not hrp or not hrp.Parent then return end
 
             local smallSteps = 4
 
@@ -194,12 +214,52 @@ local function performVideoFlick()
     isFlicking = false
 end
 
--- WALL DETECT (INALTERADO)
+-- WALL DETECT
 local lastHitInstance = nil
 local function isPlayerCharacter(instance)
     if not instance then return false end
     local model = instance:FindFirstAncestorOfClass("Model")
     return model and model:FindFirstChildOfClass("Humanoid")
+end
+
+-- só aceita parede se houver borda horizontal próxima do ponto atingido
+local function hasValidHorizontalEdge(rayResult, params)
+    if not rayResult or not rayResult.Instance then return false end
+
+    local hitPos = rayResult.Position
+    local normal = rayResult.Normal.Unit
+
+    local right = normal:Cross(Vector3.new(0, 1, 0))
+    if right.Magnitude < 0.01 then
+        return false
+    end
+    right = right.Unit
+
+    local surfaceOffset = normal * 0.08
+
+    local verticalChecks = {
+        Vector3.new(0, 0.9, 0),
+        Vector3.new(0, -0.9, 0),
+        Vector3.new(0, 1.25, 0),
+        Vector3.new(0, -1.25, 0),
+    }
+
+    local foundHorizontalEdge = false
+    for _, vOffset in ipairs(verticalChecks) do
+        local origin = hitPos + vOffset + surfaceOffset
+        local probe = workspace:Raycast(origin, -normal * 0.22, params)
+
+        if not probe or not probe.Instance or probe.Instance ~= rayResult.Instance then
+            foundHorizontalEdge = true
+            break
+        end
+    end
+
+    if not foundHorizontalEdge then
+        return false
+    end
+
+    return true
 end
 
 RunService.Heartbeat:Connect(function()
@@ -216,7 +276,8 @@ RunService.Heartbeat:Connect(function()
 
     local look = Camera.CFrame.LookVector
     local horizontal = Vector3.new(look.X, 0, look.Z)
-    if horizontal.Magnitude > 0 then horizontal = horizontal.Unit end
+    if horizontal.Magnitude > 0 then horizontal = horizontal.Unit
+    end
     local direction = horizontal * 1.55
     local result = nil
 
@@ -225,14 +286,16 @@ RunService.Heartbeat:Connect(function()
         local origin = hrp.Position + offset
         local ray = workspace:Raycast(origin, direction, params)
         if ray and ray.Instance and ray.Instance.CanCollide and not isPlayerCharacter(ray.Instance) then
-            result = ray
-            break
+            if hasValidHorizontalEdge(ray, params) then
+                result = ray
+                break
+            end
         end
     end
 
     if result and result.Instance then
         if lastHitInstance and lastHitInstance ~= result.Instance then
-            if hrp.Velocity.Y < -2.2 and tick() - lastFlickTime > 0.085 then
+            if hrp.Velocity.Y < -2.2 and tick() - lastFlickTime > WALLHOP_COOLDOWN then
                 lastFlickTime = tick()
                 performVideoFlick()
             end
@@ -250,4 +313,4 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40,40,40) or Color3.fromRGB(0,0,0)
 end)
 
-print("WallHop Loaded (flick original + overshoot limpo)")
+print("Humanoid Wallhop - Loaded Successfully ✅")
