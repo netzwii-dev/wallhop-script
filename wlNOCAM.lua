@@ -84,7 +84,7 @@ UserInputService.JumpRequest:Connect(function()
         lastDoubleJump = tick()
         canDoubleJump = false
 
-        hrp.Velocity = Vector3.new(hrp.Velocity.X, 34.5, hrp.Velocity.Z)
+        hrp.Velocity = Vector3.new(hrp.Velocity.X, 30, hrp.Velocity.Z)
         hum:ChangeState(Enum.HumanoidStateType.Jumping)
 
         task.delay(0.18, function()
@@ -130,22 +130,27 @@ local function performVideoFlick()
     hum:ChangeState(Enum.HumanoidStateType.Jumping)
 
     local baseYaw = hrp.Orientation.Y
-    local angle = pickNextFlick()
+    local angle = -pickNextFlick() -- esquerda
 
-    -- 95% flick atual / 5% flick rápido
-    local useFastFlick = math.random() < 0.05
+    -- 60% flick normal / 30% flick rápido / 10% flick ultra rápido
+    local flickRoll = math.random()
 
     local steps
     local delayMin
     local delayMax
 
-    if useFastFlick then
-        -- flick rápido recomendado
+    if flickRoll < 0.10 then
+        -- ultra rápido (10%)
+        steps = math.random(3,4)
+        delayMin = 0.003
+        delayMax = 0.0045
+    elseif flickRoll < 0.40 then
+        -- rápido (30%)
         steps = math.random(4,5)
         delayMin = 0.0045
         delayMax = 0.0065
     else
-        -- flick atual
+        -- normal (60%)
         steps = math.random(7,9)
         delayMin = 0.008
         delayMax = 0.012
@@ -183,7 +188,7 @@ local function performVideoFlick()
 
             for i = 1, smallSteps do
                 local alpha = i / smallSteps
-                local offset = -overshoot * alpha
+                local offset = overshoot * alpha
                 hrp.CFrame = CFrame.new(hrp.Position) * CFrame.Angles(0, math.rad(baseYaw) + offset, 0)
                 RunService.RenderStepped:Wait()
                 task.wait(baseDelay)
@@ -191,7 +196,7 @@ local function performVideoFlick()
 
             for i = 1, smallSteps do
                 local alpha = i / smallSteps
-                local offset = -overshoot * (1 - alpha)
+                local offset = overshoot * (1 - alpha)
                 hrp.CFrame = CFrame.new(hrp.Position) * CFrame.Angles(0, math.rad(baseYaw) + offset, 0)
                 RunService.RenderStepped:Wait()
                 task.wait(baseDelay)
@@ -262,6 +267,48 @@ local function hasValidHorizontalEdge(rayResult, params)
     return true
 end
 
+local function findValidWall(hrp, params, directions)
+    local offsets = {
+        Vector3.new(0,-2.2,0),
+        Vector3.new(0,-1.2,0),
+        Vector3.new(0,-0.4,0)
+    }
+
+    for _, dir in ipairs(directions) do
+        for _, offset in ipairs(offsets) do
+            local origin = hrp.Position + offset
+            local ray = workspace:Raycast(origin, dir, params)
+            if ray and ray.Instance and ray.Instance.CanCollide and not isPlayerCharacter(ray.Instance) then
+                if hasValidHorizontalEdge(ray, params) then
+                    return ray
+                end
+            end
+        end
+    end
+
+    return nil
+end
+
+local function isWithinWallhopAngle(cameraLook, wallNormal, maxAngleDeg)
+    local look = Vector3.new(cameraLook.X, 0, cameraLook.Z)
+    local normal = Vector3.new(wallNormal.X, 0, wallNormal.Z)
+
+    if look.Magnitude <= 0 or normal.Magnitude <= 0 then
+        return false
+    end
+
+    look = look.Unit
+    normal = normal.Unit
+
+    local dotFront = math.clamp(look:Dot(-normal), -1, 1)
+    local dotBack = math.clamp(look:Dot(normal), -1, 1)
+
+    local frontAngle = math.deg(math.acos(dotFront))
+    local backAngle = math.deg(math.acos(dotBack))
+
+    return frontAngle <= maxAngleDeg or backAngle <= maxAngleDeg
+end
+
 RunService.Heartbeat:Connect(function()
     if not isWallHopEnabled then return end
     local char = LocalPlayer.Character
@@ -276,31 +323,37 @@ RunService.Heartbeat:Connect(function()
 
     local look = Camera.CFrame.LookVector
     local horizontal = Vector3.new(look.X, 0, look.Z)
-    if horizontal.Magnitude > 0 then horizontal = horizontal.Unit
-    end
-    local direction = horizontal * 1.55
-    local result = nil
 
-    local offsets = {Vector3.new(0,-2.2,0), Vector3.new(0,-1.2,0), Vector3.new(0,-0.4,0)}
-    for _, offset in ipairs(offsets) do
-        local origin = hrp.Position + offset
-        local ray = workspace:Raycast(origin, direction, params)
-        if ray and ray.Instance and ray.Instance.CanCollide and not isPlayerCharacter(ray.Instance) then
-            if hasValidHorizontalEdge(ray, params) then
-                result = ray
-                break
-            end
-        end
+    if horizontal.Magnitude <= 0 then
+        lastHitInstance = nil
+        return
     end
+
+    horizontal = horizontal.Unit
+
+    -- frente e costas apenas; sem lados
+    local forwardDirection = horizontal * 1.55
+    local backwardDirection = -horizontal * 1.55
+
+    local result = findValidWall(hrp, params, {
+        forwardDirection,
+        backwardDirection
+    })
 
     if result and result.Instance then
-        if lastHitInstance and lastHitInstance ~= result.Instance then
-            if hrp.Velocity.Y < -2.2 and tick() - lastFlickTime > WALLHOP_COOLDOWN then
-                lastFlickTime = tick()
-                performVideoFlick()
+        local validAngle = isWithinWallhopAngle(Camera.CFrame.LookVector, result.Normal, 25)
+
+        if validAngle then
+            if lastHitInstance and lastHitInstance ~= result.Instance then
+                if hrp.Velocity.Y < -2.2 and tick() - lastFlickTime > WALLHOP_COOLDOWN then
+                    lastFlickTime = tick()
+                    performVideoFlick()
+                end
             end
+            lastHitInstance = result.Instance
+        else
+            lastHitInstance = nil
         end
-        lastHitInstance = result.Instance
     else
         lastHitInstance = nil
     end
