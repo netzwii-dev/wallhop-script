@@ -574,6 +574,12 @@ local function buildPCGui()
 		showNotice("Press a key...")
 	end)
 
+	ToggleButton.MouseButton1Click:Connect(function()
+	isWallHopEnabled = not isWallHopEnabled
+	updateToggleButton()
+	showNotice(isWallHopEnabled and "Wallhop enabled" or "Wallhop disabled")
+end)
+
 	RunService.RenderStepped:Connect(function()
 		if selectedMode ~= "PC" then return end
 		local inset = GuiService:GetGuiInset()
