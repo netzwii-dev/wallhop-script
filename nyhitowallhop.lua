@@ -43,6 +43,7 @@ end
 local DEFAULT_HIDE_GUI_KEY = Enum.KeyCode.RightShift
 local DEFAULT_TOGGLE_SCRIPT_KEY = Enum.KeyCode.Q
 local DEFAULT_TOGGLE_BEAST_SLOW_KEY = Enum.KeyCode.E
+local DEFAULT_TOGGLE_NON_SPAM_KEY = Enum.KeyCode.T
 local DEFAULT_TOGGLE_CORNER_WALK_KEY = Enum.KeyCode.R
 local DEFAULT_TOGGLE_XRAY_KEY = Enum.KeyCode.X
 
@@ -53,12 +54,14 @@ local selectedMode = nil
 local hideGuiKey = DEFAULT_HIDE_GUI_KEY
 local toggleScriptKey = DEFAULT_TOGGLE_SCRIPT_KEY
 local toggleBeastSlowKey = DEFAULT_TOGGLE_BEAST_SLOW_KEY
+local toggleNonSpamKey = DEFAULT_TOGGLE_NON_SPAM_KEY
 local toggleCornerWalkKey = DEFAULT_TOGGLE_CORNER_WALK_KEY
 local toggleXrayKey = DEFAULT_TOGGLE_XRAY_KEY
 
 local waitingForHideKey = false
 local waitingForToggleKey = false
 local waitingForBeastSlowKey = false
+local waitingForNonSpamKey = false
 local waitingForCornerWalkKey = false
 local waitingForXrayKey = false
 
@@ -81,6 +84,7 @@ local ToggleButton
 local HideGuiBindButton
 local ToggleBindButton
 local BeastSlowBindButton
+local NonSpamBindButton
 local CornerWalkBindButton
 local XrayBindButton
 local Notice
@@ -106,12 +110,15 @@ local MobileNoMoveWallhopRow
 local Mobile360WallhopRow
 local MobileConsoleWallhopRow
 local MobileBeastSlowRow
+local MobileNonSpamRow
 local MobileCornerWalkRow
 local MobileXrayRow
 local MobileHideGuiRow
 
 local mobileBeastSlowSwitch
 local mobileBeastSlowKnob
+local mobileNonSpamSwitch
+local mobileNonSpamKnob
 local mobileCornerWalkSwitch
 local mobileCornerWalkKnob
 local mobileXraySwitch
@@ -135,6 +142,7 @@ local switchMobileTab
 
 local isWallHopEnabled = false
 local isSlowEnabled = false
+local isNonSpamEnabled = false
 local isCornerWalkEnabled = false
 local isXrayEnabled = false
 local isFlicking = false
@@ -144,6 +152,7 @@ local isWallHopping = false
 local lastWallHopTime = 0
 local WALLHOP_GRACE_TIME = 1.5
 local WALLHOP_COOLDOWN = 0.22
+local NON_SPAM_COOLDOWN = 0.50
 
 local canDoubleJump = false
 local lastDoubleJump = 0
@@ -278,6 +287,7 @@ local function savePCKeybinds()
 		hideGuiKey = hideGuiKey.Name,
 		toggleScriptKey = toggleScriptKey.Name,
 		toggleBeastSlowKey = toggleBeastSlowKey.Name,
+		toggleNonSpamKey = toggleNonSpamKey.Name,
 		toggleCornerWalkKey = toggleCornerWalkKey.Name,
 		toggleXrayKey = toggleXrayKey.Name
 	}
@@ -303,6 +313,7 @@ local function loadPCKeybinds()
 		hideGuiKey = getKeyCodeFromName(decoded.hideGuiKey, DEFAULT_HIDE_GUI_KEY)
 		toggleScriptKey = getKeyCodeFromName(decoded.toggleScriptKey, DEFAULT_TOGGLE_SCRIPT_KEY)
 		toggleBeastSlowKey = getKeyCodeFromName(decoded.toggleBeastSlowKey, DEFAULT_TOGGLE_BEAST_SLOW_KEY)
+		toggleNonSpamKey = getKeyCodeFromName(decoded.toggleNonSpamKey, DEFAULT_TOGGLE_NON_SPAM_KEY)
 		toggleCornerWalkKey = getKeyCodeFromName(decoded.toggleCornerWalkKey, DEFAULT_TOGGLE_CORNER_WALK_KEY)
 		toggleXrayKey = getKeyCodeFromName(decoded.toggleXrayKey, DEFAULT_TOGGLE_XRAY_KEY)
 	end)
@@ -959,6 +970,9 @@ updateMobilePanelButtons = function()
 	if MobileBeastSlowRow and MobileBeastSlowRow:FindFirstChild("Label") then
 		MobileBeastSlowRow.Label.Text = "Beast Slow"
 	end
+	if MobileNonSpamRow and MobileNonSpamRow:FindFirstChild("Label") then
+		MobileNonSpamRow.Label.Text = "Non-spam"
+	end
 	if MobileNormalWallhopRow and MobileNormalWallhopRow:FindFirstChild("Label") then
 		MobileNormalWallhopRow.Label.Text = "Normal Wallhop"
 	end
@@ -976,6 +990,7 @@ updateMobilePanelButtons = function()
 	updateSwitchVisual(mobileCornerWalkSwitch, mobileCornerWalkKnob, mobileCornerWalkButtonVisible)
 	updateSwitchVisual(mobileXraySwitch, mobileXrayKnob, isXrayEnabled)
 	updateSwitchVisual(mobileBeastSlowSwitch, mobileBeastSlowKnob, mobileBeastSlowButtonVisible)
+	updateSwitchVisual(mobileNonSpamSwitch, mobileNonSpamKnob, isNonSpamEnabled)
 
 	setMobileWallhopVisualHidden(mobileWallhopGuiHidden)
 	setMobileCornerWalkButtonVisible(mobileCornerWalkButtonVisible)
@@ -997,6 +1012,9 @@ local function updateBindButtons()
 	end
 	if BeastSlowBindButton then
 		BeastSlowBindButton.Text = waitingForBeastSlowKey and "Press any key..." or ("Keybind Toggle Beast Slow: " .. toggleBeastSlowKey.Name)
+	end
+	if NonSpamBindButton then
+		NonSpamBindButton.Text = waitingForNonSpamKey and "Press any key..." or ("Keybind Toggle Non-spam: " .. toggleNonSpamKey.Name)
 	end
 	if CornerWalkBindButton then
 		CornerWalkBindButton.Text = waitingForCornerWalkKey and "Press any key..." or ("Keybind Toggle Corner Walk: " .. toggleCornerWalkKey.Name)
@@ -1259,6 +1277,11 @@ local function setSlowEnabled(state)
 	updateMobilePanelButtons()
 end
 
+local function setNonSpamEnabled(state)
+	isNonSpamEnabled = state and true or false
+	updateMobilePanelButtons()
+end
+
 local function setCornerWalkEnabled(state)
 	isCornerWalkEnabled = state and true or false
 	updateMobilePanelButtons()
@@ -1344,7 +1367,7 @@ local function buildMobileGui()
 	setTargetTransparency(MobileMenuButton, 0, 0)
 
 	MobilePanel = Instance.new("Frame")
-	MobilePanel.Size = UDim2.new(0, 190, 0, 282)
+	MobilePanel.Size = UDim2.new(0, 190, 0, 324)
 	MobilePanel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	MobilePanel.BorderSizePixel = 0
 	MobilePanel.Visible = false
@@ -1407,7 +1430,8 @@ local function buildMobileGui()
 	MobileHideGuiRow, mobileHideGuiSwitch, mobileHideGuiKnob = createSwitchRow(MobileFunctionsPage, 4, "Wallhop")
 	MobileCornerWalkRow, mobileCornerWalkSwitch, mobileCornerWalkKnob = createSwitchRow(MobileFunctionsPage, 46, "Corner Walk")
 	MobileBeastSlowRow, mobileBeastSlowSwitch, mobileBeastSlowKnob = createSwitchRow(MobileFunctionsPage, 88, "Beast Slow")
-	MobileXrayRow, mobileXraySwitch, mobileXrayKnob = createSwitchRow(MobileFunctionsPage, 130, "X-ray")
+	MobileNonSpamRow, mobileNonSpamSwitch, mobileNonSpamKnob = createSwitchRow(MobileFunctionsPage, 130, "Non-spam")
+	MobileXrayRow, mobileXraySwitch, mobileXrayKnob = createSwitchRow(MobileFunctionsPage, 172, "X-ray")
 
 	MobileNormalWallhopRow = createSimpleRow(MobileFlicksPage, 4, "Normal Wallhop")
 	MobileNoMoveWallhopRow = createSimpleRow(MobileFlicksPage, 46, "Visual Wallhop")
@@ -1579,9 +1603,9 @@ local function buildMobileGui()
 			end
 
 			MobilePanel.BackgroundTransparency = 1
-			MobilePanel.Size = UDim2.new(0, 184, 0, 274)
+			MobilePanel.Size = UDim2.new(0, 184, 0, 316)
 
-			elegantShow(MobilePanel, UDim2.new(0, 190, 0, 282), MobilePanel.Position, 0)
+			elegantShow(MobilePanel, UDim2.new(0, 190, 0, 324), MobilePanel.Position, 0)
 		else
 			elegantHide(MobilePanel)
 		end
@@ -1605,6 +1629,10 @@ local function buildMobileGui()
 
 	bindRowPress(MobileBeastSlowRow, function()
 		setMobileBeastSlowButtonState(not mobileBeastSlowButtonVisible)
+	end)
+
+	bindRowPress(MobileNonSpamRow, function()
+		setNonSpamEnabled(not isNonSpamEnabled)
 	end)
 
 	bindRowPress(MobileXrayRow, function()
@@ -1826,7 +1854,7 @@ local function buildPCGui()
 
 	HideGuiBindButton = Instance.new("TextButton")
 	HideGuiBindButton.Size = UDim2.new(1, -36, 0, 22)
-	HideGuiBindButton.Position = UDim2.new(0, 18, 0, 4)
+	HideGuiBindButton.Position = UDim2.new(0, 18, 0, 2)
 	HideGuiBindButton.BackgroundTransparency = 1
 	HideGuiBindButton.TextColor3 = Color3.fromRGB(255,255,255)
 	HideGuiBindButton.Font = Enum.Font.Gotham
@@ -1839,7 +1867,7 @@ local function buildPCGui()
 
 	ToggleBindButton = Instance.new("TextButton")
 	ToggleBindButton.Size = UDim2.new(1, -36, 0, 22)
-	ToggleBindButton.Position = UDim2.new(0, 18, 0, 31)
+	ToggleBindButton.Position = UDim2.new(0, 18, 0, 27)
 	ToggleBindButton.BackgroundTransparency = 1
 	ToggleBindButton.TextColor3 = Color3.fromRGB(255,255,255)
 	ToggleBindButton.Font = Enum.Font.Gotham
@@ -1852,7 +1880,7 @@ local function buildPCGui()
 
 	BeastSlowBindButton = Instance.new("TextButton")
 	BeastSlowBindButton.Size = UDim2.new(1, -36, 0, 22)
-	BeastSlowBindButton.Position = UDim2.new(0, 18, 0, 58)
+	BeastSlowBindButton.Position = UDim2.new(0, 18, 0, 52)
 	BeastSlowBindButton.BackgroundTransparency = 1
 	BeastSlowBindButton.TextColor3 = Color3.fromRGB(255,255,255)
 	BeastSlowBindButton.Font = Enum.Font.Gotham
@@ -1863,9 +1891,22 @@ local function buildPCGui()
 	noTextStroke(BeastSlowBindButton)
 	setTargetTransparency(BeastSlowBindButton, 1, 0)
 
+	NonSpamBindButton = Instance.new("TextButton")
+	NonSpamBindButton.Size = UDim2.new(1, -36, 0, 22)
+	NonSpamBindButton.Position = UDim2.new(0, 18, 0, 77)
+	NonSpamBindButton.BackgroundTransparency = 1
+	NonSpamBindButton.TextColor3 = Color3.fromRGB(255,255,255)
+	NonSpamBindButton.Font = Enum.Font.Gotham
+	NonSpamBindButton.TextSize = 15
+	NonSpamBindButton.TextXAlignment = Enum.TextXAlignment.Left
+	NonSpamBindButton.AutoButtonColor = false
+	NonSpamBindButton.Parent = PcFunctionsPage
+	noTextStroke(NonSpamBindButton)
+	setTargetTransparency(NonSpamBindButton, 1, 0)
+
 	CornerWalkBindButton = Instance.new("TextButton")
 	CornerWalkBindButton.Size = UDim2.new(1, -36, 0, 22)
-	CornerWalkBindButton.Position = UDim2.new(0, 18, 0, 85)
+	CornerWalkBindButton.Position = UDim2.new(0, 18, 0, 102)
 	CornerWalkBindButton.BackgroundTransparency = 1
 	CornerWalkBindButton.TextColor3 = Color3.fromRGB(255,255,255)
 	CornerWalkBindButton.Font = Enum.Font.Gotham
@@ -1878,7 +1919,7 @@ local function buildPCGui()
 
 	XrayBindButton = Instance.new("TextButton")
 	XrayBindButton.Size = UDim2.new(1, -36, 0, 22)
-	XrayBindButton.Position = UDim2.new(0, 18, 0, 112)
+	XrayBindButton.Position = UDim2.new(0, 18, 0, 127)
 	XrayBindButton.BackgroundTransparency = 1
 	XrayBindButton.TextColor3 = Color3.fromRGB(255,255,255)
 	XrayBindButton.Font = Enum.Font.Gotham
@@ -1979,6 +2020,7 @@ local function buildPCGui()
 		waitingForHideKey = true
 		waitingForToggleKey = false
 		waitingForBeastSlowKey = false
+		waitingForNonSpamKey = false
 		waitingForCornerWalkKey = false
 		waitingForXrayKey = false
 		updateBindButtons()
@@ -1989,6 +2031,7 @@ local function buildPCGui()
 		waitingForToggleKey = true
 		waitingForHideKey = false
 		waitingForBeastSlowKey = false
+		waitingForNonSpamKey = false
 		waitingForCornerWalkKey = false
 		waitingForXrayKey = false
 		updateBindButtons()
@@ -1999,6 +2042,19 @@ local function buildPCGui()
 		waitingForBeastSlowKey = true
 		waitingForHideKey = false
 		waitingForToggleKey = false
+		waitingForNonSpamKey = false
+		waitingForCornerWalkKey = false
+		waitingForXrayKey = false
+		updateBindButtons()
+		showNotice("Press a key...")
+	end)
+
+	NonSpamBindButton.MouseButton1Click:Connect(function()
+		waitingForNonSpamKey = true
+		waitingForHideKey = false
+		waitingForToggleKey = false
+		waitingForBeastSlowKey = false
+		waitingForNonSpamKey = false
 		waitingForCornerWalkKey = false
 		waitingForXrayKey = false
 		updateBindButtons()
@@ -2020,6 +2076,7 @@ local function buildPCGui()
 		waitingForHideKey = false
 		waitingForToggleKey = false
 		waitingForBeastSlowKey = false
+		waitingForNonSpamKey = false
 		waitingForCornerWalkKey = false
 		waitingForXrayKey = false
 		updateBindButtons()
@@ -3383,7 +3440,9 @@ RunService.Heartbeat:Connect(function()
 				farEnough = (result.Position - lastHitPosition).Magnitude >= MIN_HIT_DISTANCE
 			end
 
-			if hrp.Velocity.Y < -0.8 and tick() - lastFlickTime > WALLHOP_COOLDOWN and farEnough then
+			local activeWallhopCooldown = isNonSpamEnabled and NON_SPAM_COOLDOWN or WALLHOP_COOLDOWN
+
+			if hrp.Velocity.Y < -0.8 and tick() - lastFlickTime > activeWallhopCooldown and farEnough then
 				lastFlickTime = tick()
 				lastHitPosition = result.Position
 				performSelectedWallhop()
@@ -3414,7 +3473,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 
 	if selectedMode == "PC" then
 		if waitingForHideKey then
-			if key ~= toggleScriptKey and key ~= toggleBeastSlowKey and key ~= toggleCornerWalkKey and key ~= toggleXrayKey then
+			if key ~= toggleScriptKey and key ~= toggleBeastSlowKey and key ~= toggleNonSpamKey and key ~= toggleCornerWalkKey and key ~= toggleXrayKey then
 				hideGuiKey = key
 				waitingForHideKey = false
 				savePCKeybinds()
@@ -3427,7 +3486,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		end
 
 		if waitingForToggleKey then
-			if key ~= hideGuiKey and key ~= toggleBeastSlowKey and key ~= toggleCornerWalkKey and key ~= toggleXrayKey then
+			if key ~= hideGuiKey and key ~= toggleBeastSlowKey and key ~= toggleNonSpamKey and key ~= toggleCornerWalkKey and key ~= toggleXrayKey then
 				toggleScriptKey = key
 				waitingForToggleKey = false
 				savePCKeybinds()
@@ -3440,7 +3499,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		end
 
 		if waitingForBeastSlowKey then
-			if key ~= hideGuiKey and key ~= toggleScriptKey and key ~= toggleCornerWalkKey and key ~= toggleXrayKey then
+			if key ~= hideGuiKey and key ~= toggleScriptKey and key ~= toggleNonSpamKey and key ~= toggleCornerWalkKey and key ~= toggleXrayKey then
 				toggleBeastSlowKey = key
 				waitingForBeastSlowKey = false
 				savePCKeybinds()
@@ -3452,8 +3511,21 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 			return
 		end
 
+		if waitingForNonSpamKey then
+			if key ~= hideGuiKey and key ~= toggleScriptKey and key ~= toggleBeastSlowKey and key ~= toggleCornerWalkKey and key ~= toggleXrayKey then
+				toggleNonSpamKey = key
+				waitingForNonSpamKey = false
+				savePCKeybinds()
+				updateBindButtons()
+				showNotice("Non-spam key updated")
+			else
+				showNotice("Key already in use")
+			end
+			return
+		end
+
 		if waitingForCornerWalkKey then
-			if key ~= hideGuiKey and key ~= toggleScriptKey and key ~= toggleBeastSlowKey and key ~= toggleXrayKey then
+			if key ~= hideGuiKey and key ~= toggleScriptKey and key ~= toggleBeastSlowKey and key ~= toggleNonSpamKey and key ~= toggleXrayKey then
 				toggleCornerWalkKey = key
 				waitingForCornerWalkKey = false
 				savePCKeybinds()
@@ -3466,7 +3538,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		end
 
 		if waitingForXrayKey then
-			if key ~= hideGuiKey and key ~= toggleScriptKey and key ~= toggleBeastSlowKey and key ~= toggleCornerWalkKey then
+			if key ~= hideGuiKey and key ~= toggleScriptKey and key ~= toggleBeastSlowKey and key ~= toggleNonSpamKey and key ~= toggleCornerWalkKey then
 				toggleXrayKey = key
 				waitingForXrayKey = false
 				savePCKeybinds()
@@ -3493,6 +3565,12 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if key == toggleBeastSlowKey then
 			setSlowEnabled(not isSlowEnabled)
 			showNotice(isSlowEnabled and "Beast Slow enabled" or "Beast Slow disabled")
+			return
+		end
+
+		if key == toggleNonSpamKey then
+			setNonSpamEnabled(not isNonSpamEnabled)
+			showNotice(isNonSpamEnabled and "Non-spam enabled" or "Non-spam disabled")
 			return
 		end
 
