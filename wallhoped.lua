@@ -1,4 +1,4 @@
--- Wallhop Script (Made by nyhito)
+-- Cerber X V1.1 (Made by nyhito)
 -- All Credits: nyhito (tester, config and uploader)
 -- The Best Flee the Facility Script
 
@@ -8,6 +8,9 @@ local UserInputService = game:GetService("UserInputService")
 local GuiService = game:GetService("GuiService")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
+local TextChatService = game:GetService("TextChatService")
+
+local CERBER_ICON_IMAGE = "rbxassetid://98605939008332"
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -46,6 +49,8 @@ local DEFAULT_TOGGLE_BEAST_SLOW_KEY = Enum.KeyCode.I
 local DEFAULT_TOGGLE_CORNER_WALK_KEY = Enum.KeyCode.R
 local DEFAULT_TOGGLE_XRAY_KEY = Enum.KeyCode.X
 local DEFAULT_TOGGLE_NON_SPAM_KEY = Enum.KeyCode.U
+local DEFAULT_TOGGLE_CLIP_DANCE2_KEY = Enum.KeyCode.P
+local DEFAULT_TOGGLE_FLOORBANG_ESP_KEY = Enum.KeyCode.F
 
 local KEYBINDS_FILE = "nyhito_ftf_wallhop_keybinds.json"
 local PREFS_FILE = "nyhito_ftf_wallhop_prefs.json"
@@ -58,6 +63,8 @@ toggleBeastSlowKey = DEFAULT_TOGGLE_BEAST_SLOW_KEY
 toggleCornerWalkKey = DEFAULT_TOGGLE_CORNER_WALK_KEY
 toggleXrayKey = DEFAULT_TOGGLE_XRAY_KEY
 toggleNonSpamKey = DEFAULT_TOGGLE_NON_SPAM_KEY
+toggleClipDance2Key = DEFAULT_TOGGLE_CLIP_DANCE2_KEY
+toggleFloorbangEspKey = DEFAULT_TOGGLE_FLOORBANG_ESP_KEY
 
 waitingForHideKey = false
 waitingForToggleKey = false
@@ -65,6 +72,8 @@ waitingForBeastSlowKey = false
 waitingForCornerWalkKey = false
 waitingForXrayKey = false
 waitingForNonSpamKey = false
+waitingForClipDance2Key = false
+waitingForFloorbangEspKey = false
 
 guiVisible = true
 guiMinimized = false
@@ -88,6 +97,8 @@ BeastSlowBindButton = nil
 CornerWalkBindButton = nil
 XrayBindButton = nil
 RealXrayBindButton = nil
+ClipDance2BindButton = nil
+FloorbangEspBindButton = nil
 Notice = nil
 NoticeStroke = nil
 NoticeBar = nil
@@ -98,6 +109,7 @@ PcTabSettings = nil
 PcFunctionsPage = nil
 PcFlicksPage = nil
 PcSettingsPage = nil
+PcMinimalSettingsTitle = nil
 PcCurrentUsingLabel = nil
 PcSettingsXrayTitle = nil
 PcSettingsNonSpamTitle = nil
@@ -105,12 +117,19 @@ PcSettingsXrayBox = nil
 PcSettingsNonSpamBox = nil
 PcSettingsNonSpamAfterTitle = nil
 PcSettingsNonSpamAfterBox = nil
+PcDance2TimeTitle = nil
+PcDance2TimeBox = nil
 PcCwalkRangeTitle = nil
 PcCwalkRangeBox = nil
 PcNormalWallhopButton = nil
 PcNoMoveWallhopButton = nil
 Pc360WallhopButton = nil
 PcConsoleWallhopButton = nil
+PcFlickTypesTitle = nil
+PcFlickSettingsTitle = nil
+PcNormalFlickButton = nil
+PcSpeedFlickButton = nil
+PcSlowFlickButton = nil
 
 MobileTabFunctions = nil
 MobileTabFlicks = nil
@@ -118,25 +137,31 @@ MobileTabSettings = nil
 MobileFunctionsPage = nil
 MobileFlicksPage = nil
 MobileSettingsPage = nil
+MobileMinimalSettingsTitle = nil
 MobileCurrentUsingLabel = nil
 SettingsXrayBox = nil
 SettingsNonSpamBox = nil
 SettingsNonSpamAfterTitle = nil
 SettingsNonSpamAfterBox = nil
+SettingsDance2TimeTitle = nil
+SettingsDance2TimeBox = nil
 SettingsCwalkRangeTitle = nil
 SettingsCwalkRangeBox = nil
-ConfigNameBox = nil
-ConfigSelectedButton = nil
-ConfigDropdownFrame = nil
-ConfigAutoloadLabel = nil
 MobileNormalWallhopRow = nil
 MobileNoMoveWallhopRow = nil
 Mobile360WallhopRow = nil
 MobileConsoleWallhopRow = nil
+MobileFlickTypesTitle = nil
+MobileFlickSettingsTitle = nil
+MobileNormalFlickRow = nil
+MobileSpeedFlickRow = nil
+MobileSlowFlickRow = nil
 MobileBeastSlowRow = nil
 MobileCornerWalkRow = nil
 MobileXrayRow = nil
 MobileRealXrayRow = nil
+MobileDance2TurnRow = nil
+MobileFloorbangEspRow = nil
 MobileHideGuiRow = nil
 
 mobileBeastSlowSwitch = nil
@@ -147,6 +172,10 @@ mobileXraySwitch = nil
 mobileXrayKnob = nil
 mobileRealXraySwitch = nil
 mobileRealXrayKnob = nil
+mobileDance2TurnSwitch = nil
+mobileDance2TurnKnob = nil
+mobileFloorbangEspSwitch = nil
+mobileFloorbangEspKnob = nil
 mobileHideGuiSwitch = nil
 mobileHideGuiKnob = nil
 mobileDragHandle = nil
@@ -169,17 +198,20 @@ isSlowEnabled = false
 isCornerWalkEnabled = false
 isXrayEnabled = false
 realXrayEnabled = false
+isDance2TurnEnabled = false
+isFloorbangEspEnabled = false
+floorbangEspMarkers = {}
+FLOORBANG_HORIZONTAL_RANGE = 35
+dance2TurnToken = 0
+dance2NoclipActive = false
+dance2NoclipOriginalCanCollide = {}
 allowThirdPersonEnabled = true
 xrayOpacityValue = 60
 nonSpamValue = 50
 nonSpamAfterValue = 0
+dance2TimeValue = 10
 cwalkRangeValue = 1
 consecutiveWallhopCount = 0
-wallhopConfigs = {}
-SettingsNoticeList = {}
-selectedConfigName = "---"
-configDropdownOpen = false
-autoloadConfigName = "Default"
 isFlicking = false
 lastFlickTime = 0
 
@@ -217,6 +249,7 @@ hasWallhoppedSinceLanding = false
 specialFirstFlickArmed = false
 
 currentFlickMode = "Normal Wallhop"
+currentFlickSetting = "Normal Flick"
 next360Direction = 1
 
 local function destroyOld()
@@ -323,7 +356,9 @@ local function savePCKeybinds()
 		toggleBeastSlowKey = toggleBeastSlowKey.Name,
 		toggleCornerWalkKey = toggleCornerWalkKey.Name,
 		toggleXrayKey = toggleXrayKey.Name,
-		toggleNonSpamKey = toggleNonSpamKey.Name
+		toggleNonSpamKey = toggleNonSpamKey.Name,
+		toggleClipDance2Key = toggleClipDance2Key.Name,
+		toggleFloorbangEspKey = toggleFloorbangEspKey.Name
 	}
 
 	pcall(function()
@@ -350,6 +385,8 @@ local function loadPCKeybinds()
 		toggleCornerWalkKey = getKeyCodeFromName(decoded.toggleCornerWalkKey, DEFAULT_TOGGLE_CORNER_WALK_KEY)
 		toggleXrayKey = getKeyCodeFromName(decoded.toggleXrayKey, DEFAULT_TOGGLE_XRAY_KEY)
 		toggleNonSpamKey = getKeyCodeFromName(decoded.toggleNonSpamKey, DEFAULT_TOGGLE_NON_SPAM_KEY)
+		toggleClipDance2Key = getKeyCodeFromName(decoded.toggleClipDance2Key, DEFAULT_TOGGLE_CLIP_DANCE2_KEY)
+		toggleFloorbangEspKey = getKeyCodeFromName(decoded.toggleFloorbangEspKey, DEFAULT_TOGGLE_FLOORBANG_ESP_KEY)
 	end)
 end
 
@@ -362,13 +399,23 @@ local function saveUserPreferences()
 		xrayOpacityValue = tonumber(xrayOpacityValue) or 60,
 		nonSpamValue = tonumber(nonSpamValue) or 50,
 		nonSpamAfterValue = tonumber(nonSpamAfterValue) or 0,
+		dance2TimeValue = tonumber(dance2TimeValue) or 10,
 		cwalkRangeValue = tonumber(cwalkRangeValue) or 1,
 		currentFlickMode = tostring(currentFlickMode or "Normal Wallhop"),
+		currentFlickSetting = tostring(currentFlickSetting or "Normal Flick"),
 		isWallHopEnabled = isWallHopEnabled,
 		isSlowEnabled = isSlowEnabled,
 		isCornerWalkEnabled = isCornerWalkEnabled,
 		isNonSpamEnabled = isXrayEnabled,
-		realXrayEnabled = realXrayEnabled
+		realXrayEnabled = realXrayEnabled,
+		isDance2TurnEnabled = isDance2TurnEnabled,
+		isFloorbangEspEnabled = isFloorbangEspEnabled,
+		mobileWallhopGuiHidden = mobileWallhopGuiHidden,
+		mobileCornerWalkButtonVisible = mobileCornerWalkButtonVisible,
+		mobileBeastSlowButtonVisible = mobileBeastSlowButtonVisible,
+		mobileMenuOpen = mobileMenuOpen,
+		guiVisible = guiVisible,
+		guiMinimized = guiMinimized
 	}
 
 	pcall(function()
@@ -393,11 +440,19 @@ local function loadUserPreferences()
 		if tonumber(decoded.nonSpamAfterValue) then
 			nonSpamAfterValue = math.clamp(math.floor(tonumber(decoded.nonSpamAfterValue)), 0, 10)
 		end
+		if tonumber(decoded.dance2TimeValue) then
+			dance2TimeValue = math.clamp(math.floor(tonumber(decoded.dance2TimeValue)), 5, 20)
+		end
 		if tonumber(decoded.cwalkRangeValue) and setCwalkRangeValue then
 			setCwalkRangeValue(decoded.cwalkRangeValue)
 		end
 		if type(decoded.currentFlickMode) == "string" and decoded.currentFlickMode ~= "" then
 			currentFlickMode = decoded.currentFlickMode
+		end
+		if type(decoded.currentFlickSetting) == "string" and decoded.currentFlickSetting ~= "" then
+			if decoded.currentFlickSetting == "Normal Flick" or decoded.currentFlickSetting == "Speed Flick" or decoded.currentFlickSetting == "Slow Flick" then
+				currentFlickSetting = decoded.currentFlickSetting
+			end
 		end
 		if type(decoded.isWallHopEnabled) == "boolean" then
 			isWallHopEnabled = decoded.isWallHopEnabled
@@ -413,6 +468,30 @@ local function loadUserPreferences()
 		end
 		if type(decoded.realXrayEnabled) == "boolean" then
 			realXrayEnabled = decoded.realXrayEnabled
+		end
+		if type(decoded.isDance2TurnEnabled) == "boolean" then
+			isDance2TurnEnabled = decoded.isDance2TurnEnabled
+		end
+		if type(decoded.isFloorbangEspEnabled) == "boolean" then
+			isFloorbangEspEnabled = decoded.isFloorbangEspEnabled
+		end
+		if type(decoded.mobileWallhopGuiHidden) == "boolean" then
+			mobileWallhopGuiHidden = decoded.mobileWallhopGuiHidden
+		end
+		if type(decoded.mobileCornerWalkButtonVisible) == "boolean" then
+			mobileCornerWalkButtonVisible = decoded.mobileCornerWalkButtonVisible
+		end
+		if type(decoded.mobileBeastSlowButtonVisible) == "boolean" then
+			mobileBeastSlowButtonVisible = decoded.mobileBeastSlowButtonVisible
+		end
+		if type(decoded.mobileMenuOpen) == "boolean" then
+			mobileMenuOpen = decoded.mobileMenuOpen
+		end
+		if type(decoded.guiVisible) == "boolean" then
+			guiVisible = decoded.guiVisible
+		end
+		if type(decoded.guiMinimized) == "boolean" then
+			guiMinimized = decoded.guiMinimized
 		end
 		applyCurrentNonSpamCooldown()
 	end)
@@ -533,6 +612,439 @@ local function setXrayEnabled(state)
 	updateMobilePanelButtons()
 	saveUserPreferences()
 end
+
+local function removeFloorbangESP(player)
+	local marker = floorbangEspMarkers[player]
+	if marker then
+		pcall(function()
+			if typeof(marker) == "Instance" then
+				marker:Destroy()
+			elseif type(marker) == "table" then
+				if marker.folder and marker.folder.Parent then
+					marker.folder:Destroy()
+				elseif marker.anchor and marker.anchor.Parent then
+					marker.anchor:Destroy()
+				end
+			end
+		end)
+	end
+	floorbangEspMarkers[player] = nil
+end
+
+local function purgeFloorbangESPOrphans()
+	pcall(function()
+		for _, obj in ipairs(workspace:GetDescendants()) do
+			if obj.Name == "FloorbangESP3DRing" or obj.Name == "FloorbangESPAnchor" or obj.Name == "FloorbangESPMarker" then
+				obj:Destroy()
+			end
+		end
+	end)
+end
+
+local function clearFloorbangESP()
+	for player in pairs(floorbangEspMarkers) do
+		removeFloorbangESP(player)
+	end
+	table.clear(floorbangEspMarkers)
+	purgeFloorbangESPOrphans()
+end
+
+local function isPlayerAboveLocalPlayer(character, hrp)
+	local localChar = LocalPlayer.Character
+	local localHrp = localChar and localChar:FindFirstChild("HumanoidRootPart")
+	if not localHrp or not hrp then
+		return false
+	end
+
+	local horizontalDelta = Vector3.new(
+		hrp.Position.X - localHrp.Position.X,
+		0,
+		hrp.Position.Z - localHrp.Position.Z
+	)
+
+	if horizontalDelta.Magnitude > FLOORBANG_HORIZONTAL_RANGE then
+		return false
+	end
+
+	local okTarget, targetBoxCFrame, targetBoxSize = pcall(function()
+		return character:GetBoundingBox()
+	end)
+
+	local okLocal, localBoxCFrame, localBoxSize = pcall(function()
+		return localChar:GetBoundingBox()
+	end)
+
+	local targetBottomY = hrp.Position.Y
+	local localTopY = localHrp.Position.Y
+
+	if okTarget and targetBoxCFrame and targetBoxSize then
+		targetBottomY = targetBoxCFrame.Position.Y - (targetBoxSize.Y / 2)
+	end
+
+	if okLocal and localBoxCFrame and localBoxSize then
+		localTopY = localBoxCFrame.Position.Y + (localBoxSize.Y / 2)
+	end
+
+	return targetBottomY > (localTopY + 0.25)
+end
+
+local function getFloorbangBasePosition(character, hrp)
+	if not character or not hrp then
+		return nil
+	end
+
+	local ok, boxCFrame, boxSize = pcall(function()
+		return character:GetBoundingBox()
+	end)
+
+	if ok and boxCFrame and boxSize then
+		return Vector3.new(hrp.Position.X, boxCFrame.Position.Y - (boxSize.Y / 2) - 0.045, hrp.Position.Z)
+	end
+
+	return hrp.Position - Vector3.new(0, 3.08, 0)
+end
+
+local function buildFloorbangRing(player)
+	local folder = Instance.new("Folder")
+	folder.Name = "FloorbangESP3DRing"
+	folder.Parent = workspace
+
+	local anchor = Instance.new("Part")
+	anchor.Name = "FloorbangESPAnchor"
+	anchor.Anchored = true
+	anchor.CanCollide = false
+	anchor.CanTouch = false
+	anchor.CanQuery = false
+	anchor.CastShadow = false
+	anchor.Transparency = 1
+	anchor.Size = Vector3.new(0.15, 0.15, 0.15)
+	anchor.Parent = folder
+
+	local parts = {}
+	local segments = 180
+	local radius = 1.66
+	local thickness = 0.115
+	local height = 0.085
+	local segmentLength = ((math.pi * 2 * radius) / segments) * 1.42
+
+	for i = 1, segments do
+		local glow = Instance.new("BoxHandleAdornment")
+		glow.Name = "Glow"
+		glow.Adornee = anchor
+		glow.AlwaysOnTop = true
+		glow.ZIndex = 9
+		glow.Color3 = Color3.fromRGB(255, 0, 0)
+		glow.Transparency = 0.58
+		glow.Size = Vector3.new(segmentLength * 1.02, height * 0.9, thickness * 3.2)
+		glow.Parent = anchor
+
+		local segment = Instance.new("BoxHandleAdornment")
+		segment.Name = "Ring"
+		segment.Adornee = anchor
+		segment.AlwaysOnTop = true
+		segment.ZIndex = 10
+		segment.Color3 = Color3.fromRGB(255, 0, 0)
+		segment.Transparency = 0.01
+		segment.Size = Vector3.new(segmentLength, height, thickness)
+		segment.Parent = anchor
+
+		table.insert(parts, {segment = segment, glow = glow, angle = ((i - 1) / segments) * math.pi * 2})
+	end
+
+	folder:SetAttribute("Radius", radius)
+	folder:SetAttribute("Segments", segments)
+
+	return {
+		folder = folder,
+		anchor = anchor,
+		parts = parts
+	}
+end
+
+local function positionFloorbangRing(player)
+	local marker = floorbangEspMarkers[player]
+	if not marker then
+		return
+	end
+
+	local character = player.Character
+	local hrp = character and character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not character or not hrp or not humanoid or humanoid.Health <= 0 or not isPlayerAboveLocalPlayer(character, hrp) then
+		removeFloorbangESP(player)
+		return
+	end
+
+	local basePosition = getFloorbangBasePosition(character, hrp)
+	if not basePosition then
+		return
+	end
+
+	local anchor = marker.anchor
+	if not anchor or not anchor.Parent then
+		removeFloorbangESP(player)
+		return
+	end
+
+	anchor.CFrame = CFrame.new(basePosition)
+
+	local radius = marker.folder and marker.folder:GetAttribute("Radius") or 1.66
+
+	for _, data in ipairs(marker.parts or {}) do
+		local angle = data.angle
+		local x = math.cos(angle) * radius
+		local z = math.sin(angle) * radius
+		local localCFrame = CFrame.new(x, 0, z) * CFrame.Angles(0, -angle, 0)
+
+		if data.segment and data.segment.Parent then
+			data.segment.CFrame = localCFrame
+		end
+		if data.glow and data.glow.Parent then
+			data.glow.CFrame = localCFrame
+		end
+	end
+end
+
+local function createFloorbangESP(player)
+	if not isFloorbangEspEnabled or not player or player == LocalPlayer then
+		return
+	end
+
+	local character = player.Character
+	local hrp = character and character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not hrp or not humanoid or humanoid.Health <= 0 or not isPlayerAboveLocalPlayer(character, hrp) then
+		removeFloorbangESP(player)
+		return
+	end
+
+	local old = floorbangEspMarkers[player]
+	if old and old.folder and old.folder.Parent and old.anchor and old.anchor.Parent then
+		positionFloorbangRing(player)
+		return
+	end
+
+	removeFloorbangESP(player)
+
+	local marker = buildFloorbangRing(player)
+	floorbangEspMarkers[player] = marker
+	positionFloorbangRing(player)
+end
+
+local function updateFloorbangESP()
+	if not isFloorbangEspEnabled then
+		clearFloorbangESP()
+		return
+	end
+
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer then
+			createFloorbangESP(player)
+			positionFloorbangRing(player)
+		end
+	end
+
+	for player in pairs(floorbangEspMarkers) do
+		if not player or not player.Parent or player == LocalPlayer then
+			removeFloorbangESP(player)
+		else
+			local character = player.Character
+			local hrp = character and character:FindFirstChild("HumanoidRootPart")
+			local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+			if not hrp or not humanoid or humanoid.Health <= 0 or not isPlayerAboveLocalPlayer(character, hrp) then
+				removeFloorbangESP(player)
+			end
+		end
+	end
+end
+
+local function setFloorbangESPEnabled(state)
+	isFloorbangEspEnabled = state and true or false
+
+	if isFloorbangEspEnabled then
+		purgeFloorbangESPOrphans()
+		updateFloorbangESP()
+	else
+		clearFloorbangESP()
+	end
+
+	updateMobilePanelButtons()
+	saveUserPreferences()
+end
+
+Players.PlayerRemoving:Connect(function(player)
+	removeFloorbangESP(player)
+end)
+
+Players.PlayerAdded:Connect(function(player)
+	player.CharacterAdded:Connect(function()
+		task.wait(0.35)
+		if isFloorbangEspEnabled then
+			createFloorbangESP(player)
+		end
+	end)
+end)
+
+for _, player in ipairs(Players:GetPlayers()) do
+	if player ~= LocalPlayer then
+		player.CharacterAdded:Connect(function()
+			task.wait(0.35)
+			if isFloorbangEspEnabled then
+				createFloorbangESP(player)
+			end
+		end)
+	end
+end
+
+RunService.RenderStepped:Connect(function()
+	if not isThisScriptActive or not isThisScriptActive() then
+		clearFloorbangESP()
+		return
+	end
+
+	if isFloorbangEspEnabled then
+		updateFloorbangESP()
+	end
+end)
+
+local function restoreDance2Noclip()
+	for part, oldValue in pairs(dance2NoclipOriginalCanCollide) do
+		if part and part.Parent then
+			pcall(function()
+				part.CanCollide = oldValue
+			end)
+		end
+	end
+
+	table.clear(dance2NoclipOriginalCanCollide)
+	dance2NoclipActive = false
+end
+
+local function isDance2AnimationPlaying()
+	local char = LocalPlayer.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not hum then
+		return false
+	end
+
+	for _, track in ipairs(hum:GetPlayingAnimationTracks()) do
+		local trackName = tostring(track.Name or ""):lower()
+		local anim = track.Animation
+		local animName = anim and tostring(anim.Name or ""):lower() or ""
+		local animId = anim and tostring(anim.AnimationId or "") or ""
+
+		if track.IsPlaying and (
+			trackName:find("dance", 1, true)
+			or animName:find("dance", 1, true)
+			or animId:find("182436842", 1, true)
+			or animId:find("182436935", 1, true)
+			or animId:find("507776043", 1, true)
+			or animId:find("507776720", 1, true)
+			or animId:find("507777268", 1, true)
+		) then
+			return true
+		end
+	end
+
+	return false
+end
+
+local function startDance2Noclip(token)
+	if token ~= dance2TurnToken or not isDance2TurnEnabled then
+		return
+	end
+
+	if not isDance2AnimationPlaying() then
+		return
+	end
+
+	restoreDance2Noclip()
+	dance2NoclipActive = true
+
+	local char = LocalPlayer.Character
+	if not char then
+		return
+	end
+
+	for _, obj in ipairs(char:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			dance2NoclipOriginalCanCollide[obj] = obj.CanCollide
+			pcall(function()
+				obj.CanCollide = false
+			end)
+		end
+	end
+end
+
+local function runDance2TurnSequence()
+	if not isDance2TurnEnabled then
+		return
+	end
+
+	dance2TurnToken += 1
+	local token = dance2TurnToken
+
+	task.delay(0.6, function()
+		startDance2Noclip(token)
+
+		if token == dance2TurnToken and dance2NoclipActive then
+			task.spawn(function()
+				while token == dance2TurnToken and isDance2TurnEnabled and dance2NoclipActive do
+					if not isDance2AnimationPlaying() then
+						task.delay(getDance2TimeSeconds(), function()
+							if token == dance2TurnToken and dance2NoclipActive and not isDance2AnimationPlaying() then
+								restoreDance2Noclip()
+							end
+						end)
+						break
+					end
+
+					task.wait(0.03)
+				end
+			end)
+		end
+	end)
+
+	task.delay(1.2, function()
+		if token == dance2TurnToken then
+			restoreDance2Noclip()
+		end
+	end)
+end
+
+local function setDance2TurnEnabled(state)
+	isDance2TurnEnabled = state and true or false
+
+	if not isDance2TurnEnabled then
+		dance2TurnToken += 1
+		restoreDance2Noclip()
+	end
+
+
+	updateMobilePanelButtons()
+	saveUserPreferences()
+end
+
+local function isDance2Command(message)
+	local msg = tostring(message or ""):lower()
+	msg = msg:gsub("^%s+", ""):gsub("%s+$", "")
+	return msg == "/e dance2" or msg == "/emote dance2" or msg == "dance2"
+end
+
+LocalPlayer.Chatted:Connect(function(message)
+	if isDance2Command(message) then
+		runDance2TurnSequence()
+	end
+end)
+
+pcall(function()
+	TextChatService.SendingMessage:Connect(function(message)
+		local text = message and (message.Text or message.TextSource or "")
+		if isDance2Command(text) then
+			runDance2TurnSequence()
+		end
+	end)
+end)
 
 workspace.DescendantAdded:Connect(function(obj)
 	if not isThisScriptActive or not isThisScriptActive() then
@@ -881,12 +1393,15 @@ local function bindRowPress(button, callback)
 		end
 	end)
 
-	button.Activated:Connect(function()
-		if canUseMobileTap(button) then
-			fire()
-		end
-	end)
+	if button:IsA("GuiButton") then
+		button.Activated:Connect(function()
+			if canUseMobileTap(button) then
+				fire()
+			end
+		end)
+	end
 end
+
 
 local function updateSwitchVisual(switchFrame, knob, enabled)
 	if not switchFrame or not knob then
@@ -923,13 +1438,13 @@ local function createSwitchRow(parent, yOffset, labelText)
 
 	local label = Instance.new("TextLabel")
 	label.Name = "Label"
-	label.Size = UDim2.new(0, 88, 1, 0)
+	label.Size = UDim2.new(0, 130, 1, 0)
 	label.Position = UDim2.new(0, 12, 0, 0)
 	label.BackgroundTransparency = 1
 	label.Text = labelText
 	label.TextColor3 = Color3.fromRGB(255,255,255)
 	label.Font = Enum.Font.GothamBold
-	label.TextSize = 13
+	label.TextSize = 15
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Parent = row
 	label.ZIndex = 6
@@ -939,7 +1454,7 @@ local function createSwitchRow(parent, yOffset, labelText)
 
 	local switch = Instance.new("Frame")
 	switch.Size = UDim2.new(0, 54, 0, 28)
-	switch.Position = UDim2.new(1, -66, 0.5, -14)
+	switch.Position = UDim2.new(1, -94, 0.5, -14)
 	switch.BackgroundColor3 = Color3.fromRGB(20,20,24)
 	switch.BorderSizePixel = 0
 	switch.Parent = row
@@ -958,6 +1473,19 @@ local function createSwitchRow(parent, yOffset, labelText)
 	knob.Active = false
 	Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
 	setTargetTransparency(knob, 0, nil)
+
+	local switchHitbox = Instance.new("TextButton")
+	switchHitbox.Name = "SwitchHitbox"
+	switchHitbox.Size = UDim2.new(0, 68, 0, 38)
+	switchHitbox.Position = UDim2.new(1, -101, 0.5, -19)
+	switchHitbox.BackgroundTransparency = 1
+	switchHitbox.Text = ""
+	switchHitbox.AutoButtonColor = false
+	switchHitbox.BorderSizePixel = 0
+	switchHitbox.ZIndex = 20
+	switchHitbox.Parent = row
+	switchHitbox.Active = true
+	switchHitbox.Selectable = false
 
 	return row, switch, knob
 end
@@ -986,7 +1514,7 @@ local function createSimpleRow(parent, yOffset, labelText)
 	label.TextColor3 = Color3.fromRGB(255,255,255)
 	label.Font = Enum.Font.GothamBold
 	label.TextSize = 13
-	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.TextXAlignment = Enum.TextXAlignment.Center
 	label.Parent = row
 	label.ZIndex = 6
 	label.Active = false
@@ -1043,53 +1571,74 @@ setMobileBeastSlowButtonVisible = function(visible)
 	setHostShadowVisible(MobileBeastSlowButton, visible)
 end
 
+function setFlickSetting(settingName)
+	if settingName ~= "Normal Flick" and settingName ~= "Speed Flick" and settingName ~= "Slow Flick" then
+		settingName = "Normal Flick"
+	end
+
+	currentFlickSetting = settingName
+	updateFlickButtons()
+	saveUserPreferences()
+end
+
 updateFlickButtons = function()
 	if PcCurrentUsingLabel then
-		PcCurrentUsingLabel.Text = "Currently using: " .. currentFlickMode
+		PcCurrentUsingLabel.Text = "Currently config: " .. currentFlickMode .. ", " .. currentFlickSetting
 	end
 
 	if MobileCurrentUsingLabel then
-		MobileCurrentUsingLabel.Text = "Currently using: " .. currentFlickMode
+		MobileCurrentUsingLabel.Text = "Currently config: " .. currentFlickMode .. ", " .. currentFlickSetting
 	end
 
 	if PcNormalWallhopButton then
 		PcNormalWallhopButton.BackgroundColor3 =
 			currentFlickMode == "Normal Wallhop" and Color3.fromRGB(20,20,20) or Color3.fromRGB(6,6,6)
 	end
-
 	if PcNoMoveWallhopButton then
 		PcNoMoveWallhopButton.BackgroundColor3 =
 			currentFlickMode == "Visual Wallhop" and Color3.fromRGB(20,20,20) or Color3.fromRGB(6,6,6)
 	end
-
 	if Pc360WallhopButton then
 		Pc360WallhopButton.BackgroundColor3 =
 			currentFlickMode == "360° Wallhop" and Color3.fromRGB(20,20,20) or Color3.fromRGB(6,6,6)
 	end
-
 	if PcConsoleWallhopButton then
 		PcConsoleWallhopButton.BackgroundColor3 =
 			currentFlickMode == "Console Wallhop" and Color3.fromRGB(20,20,20) or Color3.fromRGB(6,6,6)
 	end
-
 	if MobileNormalWallhopRow then
 		MobileNormalWallhopRow.BackgroundColor3 =
 			currentFlickMode == "Normal Wallhop" and Color3.fromRGB(20,20,20) or Color3.fromRGB(0,0,0)
 	end
-
 	if MobileNoMoveWallhopRow then
 		MobileNoMoveWallhopRow.BackgroundColor3 =
 			currentFlickMode == "Visual Wallhop" and Color3.fromRGB(20,20,20) or Color3.fromRGB(0,0,0)
 	end
-
 	if Mobile360WallhopRow then
 		Mobile360WallhopRow.BackgroundColor3 =
 			currentFlickMode == "360° Wallhop" and Color3.fromRGB(20,20,20) or Color3.fromRGB(0,0,0)
 	end
-
 	if MobileConsoleWallhopRow then
 		MobileConsoleWallhopRow.BackgroundColor3 =
 			currentFlickMode == "Console Wallhop" and Color3.fromRGB(20,20,20) or Color3.fromRGB(0,0,0)
+	end
+	if PcNormalFlickButton then
+		PcNormalFlickButton.BackgroundColor3 = currentFlickSetting == "Normal Flick" and Color3.fromRGB(20,20,20) or Color3.fromRGB(6,6,6)
+	end
+	if PcSpeedFlickButton then
+		PcSpeedFlickButton.BackgroundColor3 = currentFlickSetting == "Speed Flick" and Color3.fromRGB(20,20,20) or Color3.fromRGB(6,6,6)
+	end
+	if PcSlowFlickButton then
+		PcSlowFlickButton.BackgroundColor3 = currentFlickSetting == "Slow Flick" and Color3.fromRGB(20,20,20) or Color3.fromRGB(6,6,6)
+	end
+	if MobileNormalFlickRow then
+		MobileNormalFlickRow.BackgroundColor3 = currentFlickSetting == "Normal Flick" and Color3.fromRGB(20,20,20) or Color3.fromRGB(0,0,0)
+	end
+	if MobileSpeedFlickRow then
+		MobileSpeedFlickRow.BackgroundColor3 = currentFlickSetting == "Speed Flick" and Color3.fromRGB(20,20,20) or Color3.fromRGB(0,0,0)
+	end
+	if MobileSlowFlickRow then
+		MobileSlowFlickRow.BackgroundColor3 = currentFlickSetting == "Slow Flick" and Color3.fromRGB(20,20,20) or Color3.fromRGB(0,0,0)
 	end
 end
 
@@ -1105,6 +1654,12 @@ updateMobilePanelButtons = function()
 	end
 	if MobileRealXrayRow and MobileRealXrayRow:FindFirstChild("Label") then
 		MobileRealXrayRow.Label.Text = "X-ray"
+	end
+	if MobileDance2TurnRow and MobileDance2TurnRow:FindFirstChild("Label") then
+		MobileDance2TurnRow.Label.Text = "Clip Dance2"
+	end
+	if MobileFloorbangEspRow and MobileFloorbangEspRow:FindFirstChild("Label") then
+		MobileFloorbangEspRow.Label.Text = "Floorbang ESP"
 	end
 	if MobileBeastSlowRow and MobileBeastSlowRow:FindFirstChild("Label") then
 		MobileBeastSlowRow.Label.Text = "Beast Slow"
@@ -1126,6 +1681,8 @@ updateMobilePanelButtons = function()
 	updateSwitchVisual(mobileCornerWalkSwitch, mobileCornerWalkKnob, mobileCornerWalkButtonVisible)
 	updateSwitchVisual(mobileXraySwitch, mobileXrayKnob, isXrayEnabled)
 	updateSwitchVisual(mobileRealXraySwitch, mobileRealXrayKnob, realXrayEnabled)
+	updateSwitchVisual(mobileDance2TurnSwitch, mobileDance2TurnKnob, isDance2TurnEnabled)
+	updateSwitchVisual(mobileFloorbangEspSwitch, mobileFloorbangEspKnob, isFloorbangEspEnabled)
 	updateSwitchVisual(mobileBeastSlowSwitch, mobileBeastSlowKnob, mobileBeastSlowButtonVisible)
 
 	setMobileWallhopVisualHidden(mobileWallhopGuiHidden)
@@ -1157,6 +1714,12 @@ local function updateBindButtons()
 	end
 	if RealXrayBindButton then
 		RealXrayBindButton.Text = waitingForXrayKey and "Press any key..." or ("Keybind Toggle X-ray: " .. toggleXrayKey.Name)
+	end
+	if ClipDance2BindButton then
+		ClipDance2BindButton.Text = waitingForClipDance2Key and "Press any key..." or ("Keybind Toggle Clip Dance2: " .. toggleClipDance2Key.Name)
+	end
+	if FloorbangEspBindButton then
+		FloorbangEspBindButton.Text = waitingForFloorbangEspKey and "Press any key..." or ("Keybind Toggle Floorbang ESP: " .. toggleFloorbangEspKey.Name)
 	end
 end
 
@@ -1216,7 +1779,7 @@ local function createModeSelector(onPick)
 	selectorGui.Parent = PlayerGui
 
 	local frame = Instance.new("Frame")
-	frame.Size = UDim2.new(0, 280, 0, 170)
+	frame.Size = UDim2.new(0, 320, 0, 170)
 	frame.Position = UDim2.new(0.5, 0, 0.5, 0)
 	frame.AnchorPoint = Vector2.new(0.5, 0.5)
 	frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -1227,8 +1790,8 @@ local function createModeSelector(onPick)
 	setTargetTransparency(frame, 0, nil)
 
 	local title = Instance.new("TextLabel")
-	title.Size = UDim2.new(1, -20, 0, 28)
-	title.Position = UDim2.new(0, 10, 0, 10)
+	title.Size = UDim2.new(1, -92, 0, 28)
+	title.Position = UDim2.new(0, 18, 0, 14)
 	title.BackgroundTransparency = 1
 	title.Text = "Choose Version"
 	title.TextColor3 = Color3.fromRGB(255,255,255)
@@ -1238,17 +1801,27 @@ local function createModeSelector(onPick)
 	noTextStroke(title)
 	setTargetTransparency(title, 1, 0)
 
+
 	local sub = Instance.new("TextLabel")
-	sub.Size = UDim2.new(1, -20, 0, 16)
-	sub.Position = UDim2.new(0, 10, 0, 34)
+	sub.Size = UDim2.new(1, -92, 0, 16)
+	sub.Position = UDim2.new(0, 46, 0, 42)
 	sub.BackgroundTransparency = 1
-	sub.Text = "FtF Wallhop • made by nyhito"
+	sub.Text = "Cerber X • the best Flee the Facility script"
 	sub.TextColor3 = Color3.fromRGB(95,95,95)
 	sub.Font = Enum.Font.Gotham
 	sub.TextSize = 12
 	sub.Parent = frame
 	noTextStroke(sub)
 	setTargetTransparency(sub, 1, 0)
+
+	local selectorIcon = Instance.new("ImageLabel")
+	selectorIcon.Size = UDim2.new(0, 56, 0, 56)
+	selectorIcon.Position = UDim2.new(0, 18, 0, 10)
+	selectorIcon.BackgroundTransparency = 1
+	selectorIcon.Image = CERBER_ICON_IMAGE
+	selectorIcon.ScaleType = Enum.ScaleType.Fit
+	selectorIcon.Parent = frame
+	setTargetTransparency(selectorIcon, 1, 0)
 
 	local pcButton = Instance.new("TextButton")
 	pcButton.Size = UDim2.new(1, -20, 0, 42)
@@ -1276,7 +1849,7 @@ local function createModeSelector(onPick)
 	noTextStroke(mobileButton)
 	setTargetTransparency(mobileButton, 0, 0)
 
-	elegantShow(frame, UDim2.new(0, 280, 0, 170), UDim2.new(0.5, 0, 0.5, 0), 0)
+	elegantShow(frame, UDim2.new(0, 336, 0, 170), UDim2.new(0.5, 0, 0.5, 0), 0)
 
 	pcButton.MouseButton1Click:Connect(function()
 		elegantHide(frame, function()
@@ -1389,6 +1962,20 @@ switchPcTab = function(name)
 	PcFlicksPage.Visible = isFlicks
 	PcSettingsPage.Visible = isSettings
 
+	if ToggleButton then
+		ToggleButton.Visible = isFunctions
+	end
+
+	if isFunctions and PcFunctionsPage:IsA("ScrollingFrame") then
+		PcFunctionsPage.CanvasPosition = Vector2.new(0, 0)
+	end
+	if isFlicks and PcFlicksPage:IsA("ScrollingFrame") then
+		PcFlicksPage.CanvasPosition = Vector2.new(0, 0)
+	end
+	if isSettings and PcSettingsPage:IsA("ScrollingFrame") then
+		PcSettingsPage.CanvasPosition = Vector2.new(0, 0)
+	end
+
 	PcTabFunctions.BackgroundColor3 = isFunctions and Color3.fromRGB(20,20,20) or Color3.fromRGB(8,8,8)
 	PcTabFlicks.BackgroundColor3 = isFlicks and Color3.fromRGB(20,20,20) or Color3.fromRGB(8,8,8)
 	PcTabSettings.BackgroundColor3 = isSettings and Color3.fromRGB(20,20,20) or Color3.fromRGB(8,8,8)
@@ -1398,7 +1985,7 @@ switchPcTab = function(name)
 	end
 
 	if MainFrame and MainFrame:FindFirstChild("PcFooter") then
-		MainFrame.PcFooter.Visible = isFunctions
+		MainFrame.PcFooter.Visible = false
 	end
 end
 
@@ -1415,6 +2002,16 @@ switchMobileTab = function(name)
 	MobileFlicksPage.Visible = mobileIsFlicks
 	MobileSettingsPage.Visible = mobileIsSettings
 
+	if mobileIsFunctions and MobileFunctionsPage:IsA("ScrollingFrame") then
+		MobileFunctionsPage.CanvasPosition = Vector2.new(0, 0)
+	end
+	if mobileIsFlicks and MobileFlicksPage:IsA("ScrollingFrame") then
+		MobileFlicksPage.CanvasPosition = Vector2.new(0, 0)
+	end
+	if mobileIsSettings and MobileSettingsPage:IsA("ScrollingFrame") then
+		MobileSettingsPage.CanvasPosition = Vector2.new(0, 0)
+	end
+
 	MobileTabFunctions.BackgroundColor3 = mobileIsFunctions and Color3.fromRGB(20,20,20) or Color3.fromRGB(8,8,8)
 	MobileTabFlicks.BackgroundColor3 = mobileIsFlicks and Color3.fromRGB(20,20,20) or Color3.fromRGB(8,8,8)
 	MobileTabSettings.BackgroundColor3 = mobileIsSettings and Color3.fromRGB(20,20,20) or Color3.fromRGB(8,8,8)
@@ -1424,7 +2021,7 @@ switchMobileTab = function(name)
 	end
 
 	if MobilePanel and MobilePanel:FindFirstChild("MobileFooter") then
-		MobilePanel.MobileFooter.Visible = mobileIsFunctions
+		MobilePanel.MobileFooter.Visible = false
 	end
 end
 
@@ -1449,16 +2046,19 @@ end
 local function setMobileGuiHidden(state)
 	mobileWallhopGuiHidden = state and true or false
 	updateMobilePanelButtons()
+	saveUserPreferences()
 end
 
 local function setMobileCornerWalkButtonState(state)
 	mobileCornerWalkButtonVisible = state and true or false
 	updateMobilePanelButtons()
+	saveUserPreferences()
 end
 
 local function setMobileBeastSlowButtonState(state)
 	mobileBeastSlowButtonVisible = state and true or false
 	updateMobilePanelButtons()
+	saveUserPreferences()
 end
 
 
@@ -1580,16 +2180,7 @@ function showSettingsNotice(message)
 	end)
 end
 
-function configSafeName(name)
-	name = tostring(name or "")
-	name = name:gsub("^%s+", ""):gsub("%s+$", "")
-	name = name:gsub("[^%w_%-%s]", "")
-	return name
-end
 
-function configPath(name)
-	return "nyhito_wallhop_configs/" .. configSafeName(name) .. ".json"
-end
 
 function getCwalkRangeDistance(value)
 	value = tonumber(value) or 1
@@ -1628,381 +2219,15 @@ function applyCurrentNonSpamCooldown()
 	WALLHOP_COOLDOWN = getEffectiveWallhopCooldown()
 end
 
-function ensureConfigFolder()
-	pcall(function()
-		if makefolder and not isfolder("nyhito_wallhop_configs") then
-			makefolder("nyhito_wallhop_configs")
-		end
-	end)
-end
 
-function getCurrentConfigPayload()
-	return {
-		xrayOpacityValue = tonumber(xrayOpacityValue) or 60,
-		nonSpamValue = tonumber(nonSpamValue) or 50,
-		nonSpamAfterValue = tonumber(nonSpamAfterValue) or 0,
-		cwalkRangeValue = tonumber(cwalkRangeValue) or 1,
 
-		currentFlickMode = currentFlickMode,
-		isWallHopEnabled = isWallHopEnabled,
-		isSlowEnabled = isSlowEnabled,
-		isCornerWalkEnabled = isCornerWalkEnabled,
-		realXrayEnabled = realXrayEnabled,
-		isNonSpamEnabled = isXrayEnabled,
 
-		guiVisible = guiVisible,
-		guiMinimized = guiMinimized,
-		mobileMenuOpen = mobileMenuOpen,
-		mobileWallhopGuiHidden = mobileWallhopGuiHidden,
-		mobileCornerWalkButtonVisible = mobileCornerWalkButtonVisible,
-		mobileBeastSlowButtonVisible = mobileBeastSlowButtonVisible,
 
-		hideGuiKey = hideGuiKey and hideGuiKey.Name or DEFAULT_HIDE_GUI_KEY.Name,
-		toggleScriptKey = toggleScriptKey and toggleScriptKey.Name or DEFAULT_TOGGLE_SCRIPT_KEY.Name,
-		toggleBeastSlowKey = toggleBeastSlowKey and toggleBeastSlowKey.Name or DEFAULT_TOGGLE_BEAST_SLOW_KEY.Name,
-		toggleCornerWalkKey = toggleCornerWalkKey and toggleCornerWalkKey.Name or DEFAULT_TOGGLE_CORNER_WALK_KEY.Name,
-		toggleXrayKey = toggleXrayKey and toggleXrayKey.Name or DEFAULT_TOGGLE_XRAY_KEY.Name
-	}
-end
 
-function applyConfigPayload(payload)
-	if type(payload) ~= "table" then
-		return
-	end
 
-	if tonumber(payload.xrayOpacityValue) then
-		xrayOpacityValue = math.clamp(math.floor(tonumber(payload.xrayOpacityValue)), 0, 100)
-	end
-	if tonumber(payload.nonSpamValue) then
-		nonSpamValue = math.clamp(math.floor(tonumber(payload.nonSpamValue)), 10, 99)
-	end
-	if tonumber(payload.nonSpamAfterValue) then
-		nonSpamAfterValue = math.clamp(math.floor(tonumber(payload.nonSpamAfterValue)), 0, 10)
-	end
-	if tonumber(payload.cwalkRangeValue) then
-		setCwalkRangeValue(payload.cwalkRangeValue)
-	end
 
-	if type(payload.currentFlickMode) == "string" then
-		setFlickMode(payload.currentFlickMode)
-	end
 
-	if type(payload.isWallHopEnabled) == "boolean" then
-		isWallHopEnabled = payload.isWallHopEnabled
-	end
-	if type(payload.guiVisible) == "boolean" then
-		guiVisible = payload.guiVisible
-	end
-	if type(payload.guiMinimized) == "boolean" then
-		guiMinimized = payload.guiMinimized
-	end
-	if type(payload.mobileMenuOpen) == "boolean" then
-		mobileMenuOpen = payload.mobileMenuOpen
-	end
-	if type(payload.hideGuiKey) == "string" then
-		hideGuiKey = getKeyCodeFromName(payload.hideGuiKey, DEFAULT_HIDE_GUI_KEY)
-	end
-	if type(payload.toggleScriptKey) == "string" then
-		toggleScriptKey = getKeyCodeFromName(payload.toggleScriptKey, DEFAULT_TOGGLE_SCRIPT_KEY)
-	end
-	if type(payload.toggleBeastSlowKey) == "string" then
-		toggleBeastSlowKey = getKeyCodeFromName(payload.toggleBeastSlowKey, DEFAULT_TOGGLE_BEAST_SLOW_KEY)
-	end
-	if type(payload.toggleCornerWalkKey) == "string" then
-		toggleCornerWalkKey = getKeyCodeFromName(payload.toggleCornerWalkKey, DEFAULT_TOGGLE_CORNER_WALK_KEY)
-	end
-	if type(payload.toggleXrayKey) == "string" then
-		toggleXrayKey = getKeyCodeFromName(payload.toggleXrayKey, DEFAULT_TOGGLE_XRAY_KEY)
-	end
-	if type(payload.isSlowEnabled) == "boolean" then
-		setSlowEnabled(payload.isSlowEnabled)
-	end
-	if type(payload.isCornerWalkEnabled) == "boolean" then
-		setCornerWalkEnabled(payload.isCornerWalkEnabled)
-	end
-	if type(payload.mobileWallhopGuiHidden) == "boolean" then
-		setMobileGuiHidden(payload.mobileWallhopGuiHidden)
-	end
-	if type(payload.mobileCornerWalkButtonVisible) == "boolean" then
-		setMobileCornerWalkButtonState(payload.mobileCornerWalkButtonVisible)
-	end
-	if type(payload.mobileBeastSlowButtonVisible) == "boolean" then
-		setMobileBeastSlowButtonState(payload.mobileBeastSlowButtonVisible)
-	end
 
-	if type(payload.isNonSpamEnabled) == "boolean" then
-		isXrayEnabled = payload.isNonSpamEnabled
-	end
-	applyCurrentNonSpamCooldown()
-
-	if type(payload.realXrayEnabled) == "boolean" then
-		setXrayEnabled(payload.realXrayEnabled)
-	elseif realXrayEnabled then
-		clearXray()
-		applyXray()
-	end
-
-	updateToggleButton()
-	updateMobilePanelButtons()
-	updateFlickButtons()
-	updateSettingsInputs()
-end
-
-function saveNamedConfig(name)
-	ensureConfigFolder()
-	name = configSafeName(name)
-	if name == "" then
-		return false
-	end
-
-	wallhopConfigs[name] = getCurrentConfigPayload()
-
-	pcall(function()
-		if writefile then
-			writefile(configPath(name), HttpService:JSONEncode(wallhopConfigs[name]))
-		end
-	end)
-
-	refreshConfigList(false)
-	return true
-end
-
-function loadNamedConfig(name)
-	name = configSafeName(name)
-	if name == "" or name == "---" then
-		return false
-	end
-
-	if not wallhopConfigs[name] then
-		pcall(function()
-			if readfile and isfile and isfile(configPath(name)) then
-				wallhopConfigs[name] = HttpService:JSONDecode(readfile(configPath(name)))
-			end
-		end)
-	end
-
-	if wallhopConfigs[name] then
-		applyConfigPayload(wallhopConfigs[name])
-		return true
-	end
-
-	return false
-end
-
-function deleteNamedConfig(name)
-	name = configSafeName(name)
-	if name == "" or name == "---" then
-		return false
-	end
-
-	wallhopConfigs[name] = nil
-
-	pcall(function()
-		if delfile and isfile and isfile(configPath(name)) then
-			delfile(configPath(name))
-		end
-	end)
-
-	if selectedConfigName == name then
-		selectedConfigName = "---"
-	end
-
-	refreshConfigList(false)
-	return true
-end
-
-function setAutoloadConfig(name)
-	name = configSafeName(name)
-	if name == "" or name == "---" then
-		return false
-	end
-
-	autoloadConfigName = name
-	pcall(function()
-		if writefile then
-			writefile("nyhito_wallhop_autoload.txt", name)
-		end
-	end)
-
-	updateAutoloadLabel()
-	return true
-end
-
-function resetAutoloadConfig()
-	if autoloadConfigName == "Default" or autoloadConfigName == "" or not autoloadConfigName then
-		return false
-	end
-
-	autoloadConfigName = "Default"
-
-	pcall(function()
-		if delfile and isfile and isfile("nyhito_wallhop_autoload.txt") then
-			delfile("nyhito_wallhop_autoload.txt")
-		elseif writefile then
-			writefile("nyhito_wallhop_autoload.txt", "")
-		end
-	end)
-
-	updateAutoloadLabel()
-	return true
-end
-
-function loadAutoloadConfig()
-	pcall(function()
-		if readfile and isfile and isfile("nyhito_wallhop_autoload.txt") then
-			autoloadConfigName = tostring(readfile("nyhito_wallhop_autoload.txt") or "")
-			autoloadConfigName = configSafeName(autoloadConfigName)
-			if autoloadConfigName == "" then
-				autoloadConfigName = "Default"
-			end
-		end
-	end)
-
-	if autoloadConfigName ~= "Default" and autoloadConfigName ~= "" then
-		loadNamedConfig(autoloadConfigName)
-	end
-
-	updateAutoloadLabel()
-end
-
-function refreshConfigList(showMessage)
-	ensureConfigFolder()
-
-	pcall(function()
-		if listfiles then
-			for _, path in ipairs(listfiles("nyhito_wallhop_configs")) do
-				fileName = tostring(path):match("([^/\\]+)%.json$")
-				if fileName and not wallhopConfigs[fileName] then
-					if readfile then
-						wallhopConfigs[fileName] = HttpService:JSONDecode(readfile(path))
-					end
-				end
-			end
-		end
-	end)
-
-	if ConfigDropdownFrame then
-		for _, obj in ipairs(ConfigDropdownFrame:GetChildren()) do
-			if obj:IsA("TextButton") or obj:IsA("UIListLayout") or obj:IsA("UIPadding") then
-				obj:Destroy()
-			end
-		end
-
-		ConfigDropdownFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
-		ConfigDropdownFrame.BackgroundTransparency = 0
-		ConfigDropdownFrame.ClipsDescendants = true
-
-		ConfigDropdownPadding = Instance.new("UIPadding")
-		ConfigDropdownPadding.PaddingTop = UDim.new(0, 6)
-		ConfigDropdownPadding.PaddingBottom = UDim.new(0, 6)
-		ConfigDropdownPadding.PaddingLeft = UDim.new(0, 6)
-		ConfigDropdownPadding.PaddingRight = UDim.new(0, 6)
-		ConfigDropdownPadding.Parent = ConfigDropdownFrame
-
-		ConfigDropdownLayout = Instance.new("UIListLayout")
-		ConfigDropdownLayout.FillDirection = Enum.FillDirection.Vertical
-		ConfigDropdownLayout.SortOrder = Enum.SortOrder.LayoutOrder
-		ConfigDropdownLayout.Padding = UDim.new(0, 6)
-		ConfigDropdownLayout.Parent = ConfigDropdownFrame
-
-		function newConfigOption(optionText, optionColor, optionOrder, onClick)
-			ConfigOption = Instance.new("TextButton")
-			ConfigOption.Size = UDim2.new(1, 0, 0, 32)
-			ConfigOption.BackgroundColor3 = Color3.fromRGB(0,0,0)
-			ConfigOption.BackgroundTransparency = 0
-			ConfigOption.Text = optionText
-			ConfigOption.TextColor3 = Color3.fromRGB(255,255,255)
-			ConfigOption.TextTransparency = 0
-			ConfigOption.Font = Enum.Font.GothamBold
-			ConfigOption.TextSize = 12
-			ConfigOption.TextXAlignment = Enum.TextXAlignment.Left
-			ConfigOption.AutoButtonColor = false
-			ConfigOption.LayoutOrder = optionOrder or 0
-			ConfigOption.ZIndex = 92
-			ConfigOption.Parent = ConfigDropdownFrame
-			ConfigOption.Text = "   " .. tostring(optionText)
-			Instance.new("UICorner", ConfigOption).CornerRadius = UDim.new(0, 9)
-			ConfigOptionStroke = Instance.new("UIStroke")
-			ConfigOptionStroke.Color = Color3.fromRGB(35,35,35)
-			ConfigOptionStroke.Thickness = 1
-			ConfigOptionStroke.Transparency = 0.08
-			ConfigOptionStroke.Parent = ConfigOption
-			noTextStroke(ConfigOption)
-			addSettingsPressEffect(ConfigOption)
-			ConfigOption.MouseButton1Click:Connect(onClick)
-			return ConfigOption
-		end
-
-		newConfigOption("---", Color3.fromRGB(255,255,255), 1, function()
-			selectedConfigName = "---"
-			if ConfigSelectedButton then
-				ConfigSelectedButton.Text = "   ---"
-				ConfigSelectedButton.TextColor3 = Color3.fromRGB(255,255,255)
-			end
-			configDropdownOpen = false
-			ConfigDropdownFrame.Visible = false
-			if ConfigArrowButton then
-				ConfigArrowButton.Text = "v"
-			end
-		end)
-
-		configNames = {}
-		for name, _ in pairs(wallhopConfigs) do
-			table.insert(configNames, name)
-		end
-		table.sort(configNames, function(a, b)
-			return tostring(a):lower() < tostring(b):lower()
-		end)
-
-		for index, name in ipairs(configNames) do
-			newConfigOption(name, Color3.fromRGB(255,255,255), index + 1, function()
-				selectedConfigName = name
-				if ConfigSelectedButton then
-					ConfigSelectedButton.Text = "   " .. tostring(selectedConfigName)
-					ConfigSelectedButton.TextColor3 = Color3.fromRGB(255,255,255)
-				end
-				configDropdownOpen = false
-				ConfigDropdownFrame.Visible = false
-				if ConfigArrowButton then
-					ConfigArrowButton.Text = "v"
-				end
-			end)
-		end
-
-		totalRows = #configNames + 1
-		visibleRows = math.max(1, math.min(totalRows, 4))
-		visibleHeight = 12 + (visibleRows * 32) + ((visibleRows - 1) * 6)
-		contentHeight = 12 + (totalRows * 32) + ((totalRows - 1) * 6)
-		ConfigDropdownFrame.Size = UDim2.new(1, -14, 0, visibleHeight)
-		ConfigDropdownFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
-		ConfigDropdownFrame.ScrollBarImageColor3 = Color3.fromRGB(160,160,160)
-		ConfigDropdownFrame.CanvasPosition = Vector2.new(0, 0)
-	end
-
-	if ConfigSelectedButton then
-		if selectedConfigName and selectedConfigName ~= "---" then
-			ConfigSelectedButton.Text = "   " .. tostring(selectedConfigName)
-			ConfigSelectedButton.TextColor3 = Color3.fromRGB(255,255,255)
-			ConfigSelectedButton.TextTransparency = 0
-		else
-			ConfigSelectedButton.Text = "   ---"
-			ConfigSelectedButton.TextColor3 = Color3.fromRGB(255,255,255)
-			ConfigSelectedButton.TextTransparency = 0
-		end
-	end
-	if ConfigArrowButton then
-		ConfigArrowButton.Text = configDropdownOpen and "^" or "v"
-	end
-
-	if showMessage then
-		showSettingsNotice("All the config list has been refreshed successfully.")
-	end
-end
-function updateAutoloadLabel()
-	if ConfigAutoloadLabel then
-		ConfigAutoloadLabel.Text = "Currently autoload config: " .. tostring(autoloadConfigName or "Default")
-	end
-end
 
 function updateSettingsInputs()
 	if SettingsXrayBox then
@@ -2035,6 +2260,16 @@ function updateSettingsInputs()
 		PcSettingsNonSpamAfterBox.TextTransparency = 0
 		PcSettingsNonSpamAfterBox.BackgroundTransparency = 0
 	end
+	if SettingsDance2TimeBox then
+		SettingsDance2TimeBox.Text = tostring(math.floor(tonumber(dance2TimeValue) or 10)) .. "ms"
+		SettingsDance2TimeBox.TextTransparency = 0
+		SettingsDance2TimeBox.BackgroundTransparency = 0
+	end
+	if PcDance2TimeBox then
+		PcDance2TimeBox.Text = tostring(math.floor(tonumber(dance2TimeValue) or 10)) .. "ms"
+		PcDance2TimeBox.TextTransparency = 0
+		PcDance2TimeBox.BackgroundTransparency = 0
+	end
 	if SettingsCwalkRangeBox then
 		SettingsCwalkRangeBox.Text = tostring(math.floor(tonumber(cwalkRangeValue) or 1)) .. "sd"
 		SettingsCwalkRangeBox.TextTransparency = 0
@@ -2045,25 +2280,12 @@ function updateSettingsInputs()
 		PcCwalkRangeBox.TextTransparency = 0
 		PcCwalkRangeBox.BackgroundTransparency = 0
 	end
-	if ConfigNameBox then
-		ConfigNameBox.TextTransparency = 0
-		ConfigNameBox.BackgroundTransparency = 0
-	end
-	if ConfigSelectedButton then
-		ConfigSelectedButton.TextTransparency = 0
-		ConfigSelectedButton.BackgroundTransparency = 0
-	end
-	if ConfigArrowButton then
-		ConfigArrowButton.TextTransparency = 0
-		ConfigArrowButton.Visible = true
-	end
-	for _, lbl in ipairs({SettingsNonSpamTitle, SettingsNonSpamAfterTitle, SettingsCwalkRangeTitle, SettingsXrayTitle, PcSettingsNonSpamTitle, PcSettingsNonSpamAfterTitle, PcCwalkRangeTitle, PcSettingsXrayTitle, ConfigNameTitle, ConfigListTitle, ConfigAutoloadLabel}) do
+	for _, lbl in ipairs({MobileMinimalSettingsTitle, SettingsNonSpamTitle, SettingsNonSpamAfterTitle, SettingsDance2TimeTitle, SettingsCwalkRangeTitle, SettingsXrayTitle, PcMinimalSettingsTitle, PcSettingsNonSpamTitle, PcSettingsNonSpamAfterTitle, PcDance2TimeTitle, PcCwalkRangeTitle, PcSettingsXrayTitle}) do
 		if lbl then
 			lbl.TextTransparency = 0
 			lbl.Visible = true
 		end
 	end
-	updateAutoloadLabel()
 end
 
 function applyXraySettingFromBox(sourceBox)
@@ -2121,6 +2343,26 @@ function applyNonSpamAfterSettingFromBox(sourceBox)
 	updateSettingsInputs()
 	saveUserPreferences()
 	showSettingsNotice("Successfully changed, it will now run non-spam time after " .. tostring(nonSpamAfterValue) .. " wallhops.")
+end
+
+function getDance2TimeSeconds()
+	return math.clamp((tonumber(dance2TimeValue) or 10) / 100, 0.05, 0.20)
+end
+
+function applyDance2TimeSettingFromBox(sourceBox)
+	local activeBox = sourceBox or SettingsDance2TimeBox or PcDance2TimeBox
+	value = getNumberFromSettingBox(activeBox)
+	if not value or value < 5 or value > 20 then
+		showSettingsNotice("Minimum value is 5 and the maximum value is 20.")
+		updateSettingsInputs()
+		return
+	end
+
+	dance2TimeValue = math.floor(value)
+	local secondsText = string.format("%.2f", getDance2TimeSeconds())
+	updateSettingsInputs()
+	saveUserPreferences()
+	showSettingsNotice("Sucessfully changed, the noclip for /e dance2 will now be at " .. secondsText .. " seconds.")
 end
 
 function applyCwalkRangeSettingFromBox(sourceBox)
@@ -2246,18 +2488,32 @@ function buildMobileSettingsPage()
 	MobileSettingsPage.BackgroundTransparency = 1
 	MobileSettingsPage.BorderSizePixel = 0
 	MobileSettingsPage.ScrollBarThickness = 3
-	MobileSettingsPage.CanvasSize = UDim2.new(0, 0, 0, 690)
+	MobileSettingsPage.ScrollingDirection = Enum.ScrollingDirection.Y
+	MobileSettingsPage.CanvasSize = UDim2.new(0, 0, 0, 270)
 	MobileSettingsPage.Visible = false
 	MobileSettingsPage.Parent = MobilePanel
 
-	SettingsNonSpamTitle = createSettingsLabel(MobileSettingsPage, 6, "Non-spam Time")
+	MobileMinimalSettingsTitle = Instance.new("TextLabel")
+	MobileMinimalSettingsTitle.Size = UDim2.new(1, -14, 0, 22)
+	MobileMinimalSettingsTitle.Position = UDim2.new(0, 7, 0, 4)
+	MobileMinimalSettingsTitle.BackgroundTransparency = 1
+	MobileMinimalSettingsTitle.Text = "Minimal Settings"
+	MobileMinimalSettingsTitle.TextColor3 = Color3.fromRGB(255,255,255)
+	MobileMinimalSettingsTitle.Font = Enum.Font.GothamBold
+	MobileMinimalSettingsTitle.TextSize = 13
+	MobileMinimalSettingsTitle.TextXAlignment = Enum.TextXAlignment.Left
+	MobileMinimalSettingsTitle.Parent = MobileSettingsPage
+	noTextStroke(MobileMinimalSettingsTitle)
+	setTargetTransparency(MobileMinimalSettingsTitle, 1, 0)
+
+	SettingsNonSpamTitle = createSettingsLabel(MobileSettingsPage, 32, "Non-spam Time")
 	SettingsNonSpamTitle.ZIndex = 40
 	SettingsNonSpamTitle.TextTransparency = 0
 	setTargetTransparency(SettingsNonSpamTitle, 1, 0)
 
 	SettingsNonSpamBox = Instance.new("TextBox")
 	SettingsNonSpamBox.Size = UDim2.new(0, 58, 0, 28)
-	SettingsNonSpamBox.Position = UDim2.new(1, -65, 0, 4)
+	SettingsNonSpamBox.Position = UDim2.new(1, -65, 0, 30)
 	SettingsNonSpamBox.BackgroundColor3 = Color3.fromRGB(0,0,0)
 	SettingsNonSpamBox.TextColor3 = Color3.fromRGB(255,255,255)
 	SettingsNonSpamBox.Font = Enum.Font.GothamBold
@@ -2277,14 +2533,14 @@ function buildMobileSettingsPage()
 		applyNonSpamSettingFromBox(SettingsNonSpamBox)
 	end)
 
-	SettingsNonSpamAfterTitle = createSettingsLabel(MobileSettingsPage, 42, "Non-spam After")
+	SettingsNonSpamAfterTitle = createSettingsLabel(MobileSettingsPage, 68, "Non-spam After")
 	SettingsNonSpamAfterTitle.ZIndex = 40
 	SettingsNonSpamAfterTitle.TextTransparency = 0
 	setTargetTransparency(SettingsNonSpamAfterTitle, 1, 0)
 
 	SettingsNonSpamAfterBox = Instance.new("TextBox")
 	SettingsNonSpamAfterBox.Size = UDim2.new(0, 58, 0, 28)
-	SettingsNonSpamAfterBox.Position = UDim2.new(1, -65, 0, 40)
+	SettingsNonSpamAfterBox.Position = UDim2.new(1, -65, 0, 66)
 	SettingsNonSpamAfterBox.BackgroundColor3 = Color3.fromRGB(0,0,0)
 	SettingsNonSpamAfterBox.TextColor3 = Color3.fromRGB(255,255,255)
 	SettingsNonSpamAfterBox.Font = Enum.Font.GothamBold
@@ -2304,14 +2560,41 @@ function buildMobileSettingsPage()
 		applyNonSpamAfterSettingFromBox(SettingsNonSpamAfterBox)
 	end)
 
-	SettingsCwalkRangeTitle = createSettingsLabel(MobileSettingsPage, 78, "C-walk Range")
+	SettingsDance2TimeTitle = createSettingsLabel(MobileSettingsPage, 104, "Dance2 Time")
+	SettingsDance2TimeTitle.ZIndex = 40
+	SettingsDance2TimeTitle.TextTransparency = 0
+	setTargetTransparency(SettingsDance2TimeTitle, 1, 0)
+
+	SettingsDance2TimeBox = Instance.new("TextBox")
+	SettingsDance2TimeBox.Size = UDim2.new(0, 58, 0, 28)
+	SettingsDance2TimeBox.Position = UDim2.new(1, -65, 0, 102)
+	SettingsDance2TimeBox.BackgroundColor3 = Color3.fromRGB(0,0,0)
+	SettingsDance2TimeBox.TextColor3 = Color3.fromRGB(255,255,255)
+	SettingsDance2TimeBox.Font = Enum.Font.GothamBold
+	SettingsDance2TimeBox.TextSize = 12
+	SettingsDance2TimeBox.Text = tostring(dance2TimeValue) .. "ms"
+	SettingsDance2TimeBox.ClearTextOnFocus = true
+	SettingsDance2TimeBox.ZIndex = 41
+	SettingsDance2TimeBox.Parent = MobileSettingsPage
+	Instance.new("UICorner", SettingsDance2TimeBox).CornerRadius = UDim.new(0, 8)
+	SettingsDance2TimeBoxStroke = Instance.new("UIStroke")
+	SettingsDance2TimeBoxStroke.Color = Color3.fromRGB(35,35,35)
+	SettingsDance2TimeBoxStroke.Thickness = 1
+	SettingsDance2TimeBoxStroke.Transparency = 0.08
+	SettingsDance2TimeBoxStroke.Parent = SettingsDance2TimeBox
+	noTextStroke(SettingsDance2TimeBox)
+	SettingsDance2TimeBox.FocusLost:Connect(function()
+		applyDance2TimeSettingFromBox(SettingsDance2TimeBox)
+	end)
+
+	SettingsCwalkRangeTitle = createSettingsLabel(MobileSettingsPage, 140, "C-walk Range")
 	SettingsCwalkRangeTitle.ZIndex = 40
 	SettingsCwalkRangeTitle.TextTransparency = 0
 	setTargetTransparency(SettingsCwalkRangeTitle, 1, 0)
 
 	SettingsCwalkRangeBox = Instance.new("TextBox")
 	SettingsCwalkRangeBox.Size = UDim2.new(0, 58, 0, 28)
-	SettingsCwalkRangeBox.Position = UDim2.new(1, -65, 0, 76)
+	SettingsCwalkRangeBox.Position = UDim2.new(1, -65, 0, 138)
 	SettingsCwalkRangeBox.BackgroundColor3 = Color3.fromRGB(0,0,0)
 	SettingsCwalkRangeBox.TextColor3 = Color3.fromRGB(255,255,255)
 	SettingsCwalkRangeBox.Font = Enum.Font.GothamBold
@@ -2331,14 +2614,14 @@ function buildMobileSettingsPage()
 		applyCwalkRangeSettingFromBox(SettingsCwalkRangeBox)
 	end)
 
-	SettingsXrayTitle = createSettingsLabel(MobileSettingsPage, 114, "X-ray Opacity")
+	SettingsXrayTitle = createSettingsLabel(MobileSettingsPage, 176, "X-ray Opacity")
 	SettingsXrayTitle.ZIndex = 40
 	SettingsXrayTitle.TextTransparency = 0
 	setTargetTransparency(SettingsXrayTitle, 1, 0)
 
 	SettingsXrayBox = Instance.new("TextBox")
 	SettingsXrayBox.Size = UDim2.new(0, 58, 0, 28)
-	SettingsXrayBox.Position = UDim2.new(1, -65, 0, 112)
+	SettingsXrayBox.Position = UDim2.new(1, -65, 0, 174)
 	SettingsXrayBox.BackgroundColor3 = Color3.fromRGB(0,0,0)
 	SettingsXrayBox.TextColor3 = Color3.fromRGB(255,255,255)
 	SettingsXrayBox.Font = Enum.Font.GothamBold
@@ -2358,195 +2641,7 @@ function buildMobileSettingsPage()
 		applyXraySettingFromBox(SettingsXrayBox)
 	end)
 
-	ConfigNameTitle = createSettingsLabel(MobileSettingsPage, 152, "Config name")
-	ConfigNameTitle.ZIndex = 40
-	ConfigNameTitle.TextTransparency = 0
-	setTargetTransparency(ConfigNameTitle, 1, 0)
-
-	ConfigNameBox = Instance.new("TextBox")
-	ConfigNameBox.Size = UDim2.new(1, -7, 0, 32)
-	ConfigNameBox.Position = UDim2.new(0, 0, 0, 178)
-	ConfigNameBox.BackgroundColor3 = Color3.fromRGB(0,0,0)
-	ConfigNameBox.TextColor3 = Color3.fromRGB(180,180,180)
-	ConfigNameBox.PlaceholderText = "---"
-	ConfigNameBox.PlaceholderColor3 = Color3.fromRGB(180,180,180)
-	ConfigNameBox.Font = Enum.Font.GothamBold
-	ConfigNameBox.TextSize = 13
-	ConfigNameBox.TextXAlignment = Enum.TextXAlignment.Left
-	ConfigNameBox.Text = ""
-	ConfigNameBox.ClearTextOnFocus = false
-	ConfigNameBox.ZIndex = 41
-	ConfigNameBox.Parent = MobileSettingsPage
-	Instance.new("UICorner", ConfigNameBox).CornerRadius = UDim.new(0, 10)
-	ConfigNameStroke = Instance.new("UIStroke")
-	ConfigNameStroke.Color = Color3.fromRGB(35,35,35)
-	ConfigNameStroke.Thickness = 1
-	ConfigNameStroke.Transparency = 0.08
-	ConfigNameStroke.Parent = ConfigNameBox
-
-	ConfigNamePadding = Instance.new("UIPadding")
-	ConfigNamePadding.PaddingLeft = UDim.new(0, 16)
-	ConfigNamePadding.PaddingRight = UDim.new(0, 12)
-	ConfigNamePadding.Parent = ConfigNameBox
-
-	noTextStroke(ConfigNameBox)
-	addSettingsPressEffect(ConfigNameBox)
-
-	CreateConfigButton = createSettingsButton(MobileSettingsPage, 220, "Create config")
-	CreateConfigButton.ZIndex = 41
-	CreateConfigButton.MouseButton1Click:Connect(function()
-		name = configSafeName(ConfigNameBox.Text)
-		if name == "" then
-			showSettingsNotice("You need to give the config a name first!")
-			return
-		end
-		saveNamedConfig(name)
-		selectedConfigName = name
-		showSettingsNotice("The configuration file " .. name .. " was created successfully.")
-		if ConfigSelectedButton then
-			ConfigSelectedButton.Text = "   " .. name
-			ConfigSelectedButton.TextColor3 = Color3.fromRGB(255,255,255)
-			ConfigSelectedButton.TextTransparency = 0
-		end
-	end)
-
-	ConfigListTitle = createSettingsLabel(MobileSettingsPage, 262, "Config list")
-	ConfigListTitle.ZIndex = 40
-	ConfigListTitle.TextTransparency = 0
-	setTargetTransparency(ConfigListTitle, 1, 0)
-
-	ConfigSelectedButton = createSettingsButton(MobileSettingsPage, 290, "   ---")
-	ConfigSelectedButton.BackgroundColor3 = Color3.fromRGB(0,0,0)
-	ConfigSelectedButton.TextColor3 = Color3.fromRGB(255,255,255)
-	ConfigSelectedButton.TextXAlignment = Enum.TextXAlignment.Left
-	ConfigSelectedButton.ZIndex = 45
-
-	ConfigArrowButton = Instance.new("TextLabel")
-	ConfigArrowButton.Size = UDim2.new(0, 24, 1, 0)
-	ConfigArrowButton.Position = UDim2.new(1, -30, 0, 0)
-	ConfigArrowButton.BackgroundTransparency = 1
-	ConfigArrowButton.Text = "v"
-	ConfigArrowButton.TextColor3 = Color3.fromRGB(255,255,255)
-	ConfigArrowButton.TextTransparency = 0
-	ConfigArrowButton.Font = Enum.Font.GothamBold
-	ConfigArrowButton.TextSize = 16
-	ConfigArrowButton.TextXAlignment = Enum.TextXAlignment.Center
-	ConfigArrowButton.ZIndex = 46
-	ConfigArrowButton.Parent = ConfigSelectedButton
-	noTextStroke(ConfigArrowButton)
-	setTargetTransparency(ConfigArrowButton, 1, 0)
-
-	ConfigDropdownFrame = Instance.new("ScrollingFrame")
-	ConfigDropdownFrame.Size = UDim2.new(1, -14, 0, 44)
-	ConfigDropdownFrame.Position = UDim2.new(0, 7, 0, 326)
-	ConfigDropdownFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
-	ConfigDropdownFrame.BorderSizePixel = 0
-	ConfigDropdownFrame.Visible = false
-	ConfigDropdownFrame.ZIndex = 85
-	ConfigDropdownFrame.Active = true
-	ConfigDropdownFrame.ScrollBarThickness = 3
-	ConfigDropdownFrame.ScrollingDirection = Enum.ScrollingDirection.Y
-	ConfigDropdownFrame.CanvasSize = UDim2.new(0, 0, 0, 44)
-	ConfigDropdownFrame.AutomaticCanvasSize = Enum.AutomaticSize.None
-	ConfigDropdownFrame.Parent = MobileSettingsPage
-	Instance.new("UICorner", ConfigDropdownFrame).CornerRadius = UDim.new(0, 12)
-	ConfigDropdownStroke = Instance.new("UIStroke")
-	ConfigDropdownStroke.Color = Color3.fromRGB(35,35,35)
-	ConfigDropdownStroke.Thickness = 1
-	ConfigDropdownStroke.Transparency = 0.08
-	ConfigDropdownStroke.Parent = ConfigDropdownFrame
-
-	ConfigSelectedButton.MouseButton1Click:Connect(function()
-		configDropdownOpen = not configDropdownOpen
-		if ConfigDropdownFrame then
-			ConfigDropdownFrame.Visible = configDropdownOpen
-			ConfigDropdownFrame.CanvasPosition = Vector2.new(0, 0)
-		end
-		if ConfigArrowButton then
-			ConfigArrowButton.Text = configDropdownOpen and "^" or "v"
-		end
-	end)
-
-	LoadConfigButton = createSettingsButton(MobileSettingsPage, 336, "Load config")
-	LoadConfigButton.MouseButton1Click:Connect(function()
-		if not selectedConfigName or selectedConfigName == "---" then
-			showSettingsNotice("Please select a config first!")
-			return
-		end
-		if loadNamedConfig(selectedConfigName) then
-			showSettingsNotice("The " .. selectedConfigName .. " config was loaded successfully.")
-		end
-	end)
-
-	OverwriteConfigButton = createSettingsButton(MobileSettingsPage, 374, "Overwrite config")
-	OverwriteConfigButton.MouseButton1Click:Connect(function()
-		if not selectedConfigName or selectedConfigName == "---" then
-			showSettingsNotice("Please select a config first!")
-			return
-		end
-		saveNamedConfig(selectedConfigName)
-		showSettingsNotice("The " .. selectedConfigName .. " config was overwritten successfully.")
-	end)
-
-	DeleteConfigButton = createSettingsButton(MobileSettingsPage, 412, "Delete config")
-	DeleteConfigButton.MouseButton1Click:Connect(function()
-		if not selectedConfigName or selectedConfigName == "---" then
-			showSettingsNotice("Please select a config first!")
-			return
-		end
-		name = selectedConfigName
-		if deleteNamedConfig(name) then
-			showSettingsNotice("The " .. name .. " config was being deleted successfully.")
-		end
-	end)
-
-	RefreshConfigButton = createSettingsButton(MobileSettingsPage, 450, "Refresh list")
-	RefreshConfigButton.MouseButton1Click:Connect(function()
-		refreshConfigList(false)
-		showSettingsNotice("All the config list has been refreshed successfully.")
-	end)
-
-	SetAutoloadButton = createSettingsButton(MobileSettingsPage, 488, "Set as autoload")
-	SetAutoloadButton.MouseButton1Click:Connect(function()
-		if not selectedConfigName or selectedConfigName == "---" then
-			showSettingsNotice("Please select a config first!")
-			return
-		end
-		if setAutoloadConfig(selectedConfigName) then
-			showSettingsNotice("The " .. selectedConfigName .. " config was being set as autoload successfully.")
-		end
-	end)
-
-	ResetAutoloadButton = createSettingsButton(MobileSettingsPage, 526, "Reset autoload")
-	ResetAutoloadButton.MouseButton1Click:Connect(function()
-		if resetAutoloadConfig() then
-			showSettingsNotice("The autoload config has been reset successfully.")
-		else
-			showSettingsNotice("You dont have an autoload config yet!")
-		end
-	end)
-
-	ConfigAutoloadLabel = Instance.new("TextLabel")
-	ConfigAutoloadLabel.Size = UDim2.new(1, -14, 0, 40)
-	ConfigAutoloadLabel.Position = UDim2.new(0, 7, 0, 566)
-	ConfigAutoloadLabel.BackgroundTransparency = 1
-	ConfigAutoloadLabel.TextColor3 = Color3.fromRGB(255,255,255)
-	ConfigAutoloadLabel.Font = Enum.Font.Gotham
-	ConfigAutoloadLabel.TextSize = 12
-	ConfigAutoloadLabel.TextWrapped = true
-	ConfigAutoloadLabel.TextXAlignment = Enum.TextXAlignment.Left
-	ConfigAutoloadLabel.TextYAlignment = Enum.TextYAlignment.Top
-	ConfigAutoloadLabel.ZIndex = 40
-	ConfigAutoloadLabel.Parent = MobileSettingsPage
-	ConfigAutoloadLabel.TextTransparency = 0
-	noTextStroke(ConfigAutoloadLabel)
-	setTargetTransparency(ConfigAutoloadLabel, 1, 0)
-
-	task.defer(function()
-		refreshConfigList(false)
-	end)
 	updateSettingsInputs()
-	task.defer(loadAutoloadConfig)
 end
 
 local function buildMobileGui()
@@ -2614,7 +2709,7 @@ local function buildMobileGui()
 	setTargetTransparency(MobileMenuButton, 0, 0)
 
 	MobilePanel = Instance.new("Frame")
-	MobilePanel.Size = UDim2.new(0, 198, 0, 324)
+	MobilePanel.Size = UDim2.new(0, 232, 0, 324)
 	MobilePanel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	MobilePanel.BorderSizePixel = 0
 	MobilePanel.Visible = false
@@ -2624,7 +2719,7 @@ local function buildMobileGui()
 	setTargetTransparency(MobilePanel, 0, nil)
 
 	mobileDragHandle = Instance.new("Frame")
-	mobileDragHandle.Size = UDim2.new(1, -14, 0, 14)
+	mobileDragHandle.Size = UDim2.new(1, -16, 0, 14)
 	mobileDragHandle.Position = UDim2.new(0, 7, 0, 5)
 	mobileDragHandle.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
 	mobileDragHandle.BorderSizePixel = 0
@@ -2634,13 +2729,13 @@ local function buildMobileGui()
 	setTargetTransparency(mobileDragHandle, 0, nil)
 
 	MobileTabFunctions = Instance.new("TextButton")
-	MobileTabFunctions.Size = UDim2.new(0, 54, 0, 26)
-	MobileTabFunctions.Position = UDim2.new(0, 7, 0, 24)
+	MobileTabFunctions.Size = UDim2.new(0, 62, 0, 26)
+	MobileTabFunctions.Position = UDim2.new(0, 8, 0, 24)
 	MobileTabFunctions.BackgroundColor3 = Color3.fromRGB(20,20,20)
 	MobileTabFunctions.Text = "Functions"
 	MobileTabFunctions.TextColor3 = Color3.fromRGB(255,255,255)
 	MobileTabFunctions.Font = Enum.Font.GothamBold
-	MobileTabFunctions.TextSize = 10
+	MobileTabFunctions.TextSize = 11
 	MobileTabFunctions.Parent = MobilePanel
 	MobileTabFunctions.AutoButtonColor = false
 	Instance.new("UICorner", MobileTabFunctions).CornerRadius = UDim.new(0, 10)
@@ -2648,13 +2743,13 @@ local function buildMobileGui()
 	noTextStroke(MobileTabFunctions)
 
 	MobileTabFlicks = Instance.new("TextButton")
-	MobileTabFlicks.Size = UDim2.new(0, 54, 0, 26)
-	MobileTabFlicks.Position = UDim2.new(0, 67, 0, 24)
+	MobileTabFlicks.Size = UDim2.new(0, 62, 0, 26)
+	MobileTabFlicks.Position = UDim2.new(0, 84, 0, 24)
 	MobileTabFlicks.BackgroundColor3 = Color3.fromRGB(8,8,8)
 	MobileTabFlicks.Text = "Flicks"
 	MobileTabFlicks.TextColor3 = Color3.fromRGB(255,255,255)
 	MobileTabFlicks.Font = Enum.Font.GothamBold
-	MobileTabFlicks.TextSize = 10
+	MobileTabFlicks.TextSize = 11
 	MobileTabFlicks.Parent = MobilePanel
 	MobileTabFlicks.AutoButtonColor = false
 	Instance.new("UICorner", MobileTabFlicks).CornerRadius = UDim.new(0, 10)
@@ -2662,52 +2757,106 @@ local function buildMobileGui()
 	noTextStroke(MobileTabFlicks)
 
 	MobileTabSettings = Instance.new("TextButton")
-	MobileTabSettings.Size = UDim2.new(0, 58, 0, 26)
-	MobileTabSettings.Position = UDim2.new(0, 127, 0, 24)
+	MobileTabSettings.Size = UDim2.new(0, 66, 0, 26)
+	MobileTabSettings.Position = UDim2.new(0, 160, 0, 24)
 	MobileTabSettings.BackgroundColor3 = Color3.fromRGB(8,8,8)
 	MobileTabSettings.Text = "Settings"
 	MobileTabSettings.TextColor3 = Color3.fromRGB(255,255,255)
 	MobileTabSettings.Font = Enum.Font.GothamBold
-	MobileTabSettings.TextSize = 10
+	MobileTabSettings.TextSize = 11
 	MobileTabSettings.Parent = MobilePanel
 	MobileTabSettings.AutoButtonColor = false
 	Instance.new("UICorner", MobileTabSettings).CornerRadius = UDim.new(0, 10)
 	setTargetTransparency(MobileTabSettings, 0, 0)
 	noTextStroke(MobileTabSettings)
 
-	MobileFunctionsPage = Instance.new("Frame")
+	MobileFunctionsPage = Instance.new("ScrollingFrame")
 	MobileFunctionsPage.Size = UDim2.new(1, 0, 1, -58)
 	MobileFunctionsPage.Position = UDim2.new(0, 0, 0, 58)
 	MobileFunctionsPage.BackgroundTransparency = 1
+	MobileFunctionsPage.BorderSizePixel = 0
+	MobileFunctionsPage.ScrollBarThickness = 3
+	MobileFunctionsPage.ScrollingDirection = Enum.ScrollingDirection.Y
+	MobileFunctionsPage.CanvasSize = UDim2.new(0, 0, 0, 368)
 	MobileFunctionsPage.Parent = MobilePanel
 
-	MobileFlicksPage = Instance.new("Frame")
+	MobileFlicksPage = Instance.new("ScrollingFrame")
 	MobileFlicksPage.Size = UDim2.new(1, 0, 1, -58)
 	MobileFlicksPage.Position = UDim2.new(0, 0, 0, 58)
 	MobileFlicksPage.BackgroundTransparency = 1
+	MobileFlicksPage.BorderSizePixel = 0
+	MobileFlicksPage.ScrollBarThickness = 3
+	MobileFlicksPage.ScrollingDirection = Enum.ScrollingDirection.Y
+	MobileFlicksPage.CanvasSize = UDim2.new(0, 0, 0, 420)
 	MobileFlicksPage.Parent = MobilePanel
 	MobileFlicksPage.Visible = false
 
 	buildMobileSettingsPage()
 
-	MobileHideGuiRow, mobileHideGuiSwitch, mobileHideGuiKnob = createSwitchRow(MobileFunctionsPage, 4, "Wallhop")
-	MobileXrayRow, mobileXraySwitch, mobileXrayKnob = createSwitchRow(MobileFunctionsPage, 46, "Non-spam")
-	MobileRealXrayRow, mobileRealXraySwitch, mobileRealXrayKnob = createSwitchRow(MobileFunctionsPage, 88, "X-ray")
-	MobileCornerWalkRow, mobileCornerWalkSwitch, mobileCornerWalkKnob = createSwitchRow(MobileFunctionsPage, 130, "Corner Walk")
-	MobileBeastSlowRow, mobileBeastSlowSwitch, mobileBeastSlowKnob = createSwitchRow(MobileFunctionsPage, 172, "Beast Slow")
+	MobileAllFunctionsTitle = Instance.new("TextLabel")
+	MobileAllFunctionsTitle.Size = UDim2.new(1, -14, 0, 22)
+	MobileAllFunctionsTitle.Position = UDim2.new(0, 7, 0, 4)
+	MobileAllFunctionsTitle.BackgroundTransparency = 1
+	MobileAllFunctionsTitle.Text = "All Functions"
+	MobileAllFunctionsTitle.TextColor3 = Color3.fromRGB(255,255,255)
+	MobileAllFunctionsTitle.Font = Enum.Font.GothamBold
+	MobileAllFunctionsTitle.TextSize = 13
+	MobileAllFunctionsTitle.TextXAlignment = Enum.TextXAlignment.Left
+	MobileAllFunctionsTitle.Parent = MobileFunctionsPage
+	noTextStroke(MobileAllFunctionsTitle)
+	setTargetTransparency(MobileAllFunctionsTitle, 1, 0)
 
-	MobileNormalWallhopRow = createSimpleRow(MobileFlicksPage, 4, "Normal Wallhop")
-	MobileNoMoveWallhopRow = createSimpleRow(MobileFlicksPage, 46, "Visual Wallhop")
-	Mobile360WallhopRow = createSimpleRow(MobileFlicksPage, 88, "360° Wallhop")
-	MobileConsoleWallhopRow = createSimpleRow(MobileFlicksPage, 130, "Console Wallhop")
+	MobileHideGuiRow, mobileHideGuiSwitch, mobileHideGuiKnob = createSwitchRow(MobileFunctionsPage, 30, "Wallhop")
+	MobileXrayRow, mobileXraySwitch, mobileXrayKnob = createSwitchRow(MobileFunctionsPage, 72, "Non-spam")
+	MobileRealXrayRow, mobileRealXraySwitch, mobileRealXrayKnob = createSwitchRow(MobileFunctionsPage, 114, "X-ray")
+	MobileCornerWalkRow, mobileCornerWalkSwitch, mobileCornerWalkKnob = createSwitchRow(MobileFunctionsPage, 156, "Corner Walk")
+	MobileBeastSlowRow, mobileBeastSlowSwitch, mobileBeastSlowKnob = createSwitchRow(MobileFunctionsPage, 198, "Beast Slow")
+	MobileDance2TurnRow, mobileDance2TurnSwitch, mobileDance2TurnKnob = createSwitchRow(MobileFunctionsPage, 240, "Clip Dance2")
+	MobileFloorbangEspRow, mobileFloorbangEspSwitch, mobileFloorbangEspKnob = createSwitchRow(MobileFunctionsPage, 282, "Floorbang ESP")
+
+	MobileFlickTypesTitle = Instance.new("TextLabel")
+	MobileFlickTypesTitle.Size = UDim2.new(1, -14, 0, 22)
+	MobileFlickTypesTitle.Position = UDim2.new(0, 7, 0, 4)
+	MobileFlickTypesTitle.BackgroundTransparency = 1
+	MobileFlickTypesTitle.Text = "Flick Types"
+	MobileFlickTypesTitle.TextColor3 = Color3.fromRGB(255,255,255)
+	MobileFlickTypesTitle.Font = Enum.Font.GothamBold
+	MobileFlickTypesTitle.TextSize = 13
+	MobileFlickTypesTitle.TextXAlignment = Enum.TextXAlignment.Left
+	MobileFlickTypesTitle.Parent = MobileFlicksPage
+	noTextStroke(MobileFlickTypesTitle)
+	setTargetTransparency(MobileFlickTypesTitle, 1, 0)
+
+	MobileNormalWallhopRow = createSimpleRow(MobileFlicksPage, 30, "Normal Wallhop")
+	MobileNoMoveWallhopRow = createSimpleRow(MobileFlicksPage, 72, "Visual Wallhop")
+	Mobile360WallhopRow = createSimpleRow(MobileFlicksPage, 114, "360° Wallhop")
+	MobileConsoleWallhopRow = createSimpleRow(MobileFlicksPage, 156, "Console Wallhop")
+
+	MobileFlickSettingsTitle = Instance.new("TextLabel")
+	MobileFlickSettingsTitle.Size = UDim2.new(1, -14, 0, 22)
+	MobileFlickSettingsTitle.Position = UDim2.new(0, 7, 0, 202)
+	MobileFlickSettingsTitle.BackgroundTransparency = 1
+	MobileFlickSettingsTitle.Text = "Flick Settings"
+	MobileFlickSettingsTitle.TextColor3 = Color3.fromRGB(255,255,255)
+	MobileFlickSettingsTitle.Font = Enum.Font.GothamBold
+	MobileFlickSettingsTitle.TextSize = 13
+	MobileFlickSettingsTitle.TextXAlignment = Enum.TextXAlignment.Left
+	MobileFlickSettingsTitle.Parent = MobileFlicksPage
+	noTextStroke(MobileFlickSettingsTitle)
+	setTargetTransparency(MobileFlickSettingsTitle, 1, 0)
+
+	MobileNormalFlickRow = createSimpleRow(MobileFlicksPage, 228, "Normal Flick")
+	MobileSpeedFlickRow = createSimpleRow(MobileFlicksPage, 270, "Speed Flick")
+	MobileSlowFlickRow = createSimpleRow(MobileFlicksPage, 312, "Slow Flick")
 
 	MobileCurrentUsingLabel = Instance.new("TextLabel")
 	MobileCurrentUsingLabel.Size = UDim2.new(1, -14, 0, 46)
-	MobileCurrentUsingLabel.Position = UDim2.new(0, 7, 0, 176)
+	MobileCurrentUsingLabel.Position = UDim2.new(0, 7, 0, 354)
 	MobileCurrentUsingLabel.BackgroundTransparency = 1
+	MobileCurrentUsingLabel.Text = "Currently config: " .. currentFlickMode .. ", " .. currentFlickSetting
 	MobileCurrentUsingLabel.TextColor3 = Color3.fromRGB(200,200,200)
 	MobileCurrentUsingLabel.Font = Enum.Font.Gotham
-	MobileCurrentUsingLabel.TextSize = 12
+	MobileCurrentUsingLabel.TextSize = 10
 	MobileCurrentUsingLabel.TextWrapped = true
 	MobileCurrentUsingLabel.TextXAlignment = Enum.TextXAlignment.Left
 	MobileCurrentUsingLabel.TextYAlignment = Enum.TextYAlignment.Top
@@ -2720,12 +2869,13 @@ local function buildMobileGui()
 	mobileFooter.Size = UDim2.new(1, -14, 0, 14)
 	mobileFooter.Position = UDim2.new(0, 7, 1, -18)
 	mobileFooter.BackgroundTransparency = 1
-	mobileFooter.Text = "the best flee the facility wallhop script"
+	mobileFooter.Text = ""
 	mobileFooter.TextColor3 = Color3.fromRGB(95,95,95)
 	mobileFooter.Font = Enum.Font.Gotham
 	mobileFooter.TextSize = 10
 	mobileFooter.TextXAlignment = Enum.TextXAlignment.Left
 	mobileFooter.ZIndex = 80
+	mobileFooter.Visible = false
 	mobileFooter.Parent = MobilePanel
 	noTextStroke(mobileFooter)
 	setTargetTransparency(mobileFooter, 1, 0)
@@ -2836,6 +2986,7 @@ local function buildMobileGui()
 		end
 		isWallHopEnabled = not isWallHopEnabled
 		updateToggleButton()
+		saveUserPreferences()
 	end)
 
 	MobileCornerWalkButton.Activated:Connect(function()
@@ -2860,6 +3011,7 @@ local function buildMobileGui()
 		end
 
 		mobileMenuOpen = not mobileMenuOpen
+		saveUserPreferences()
 
 		if mobileMenuOpen then
 			if not MobilePanel:GetAttribute("CustomMoved") then
@@ -2867,9 +3019,9 @@ local function buildMobileGui()
 			end
 
 			MobilePanel.BackgroundTransparency = 1
-			MobilePanel.Size = UDim2.new(0, 184, 0, 316)
+			MobilePanel.Size = UDim2.new(0, 224, 0, 316)
 
-			elegantShow(MobilePanel, UDim2.new(0, 190, 0, 324), MobilePanel.Position, 0)
+			elegantShow(MobilePanel, UDim2.new(0, 232, 0, 324), MobilePanel.Position, 0)
 		else
 			elegantHide(MobilePanel)
 		end
@@ -2887,26 +3039,35 @@ local function buildMobileGui()
 		switchMobileTab("Settings")
 	end)
 
-	bindRowPress(MobileHideGuiRow, function()
+	bindRowPress(MobileHideGuiRow and MobileHideGuiRow:FindFirstChild("SwitchHitbox"), function()
 		setMobileGuiHidden(not mobileWallhopGuiHidden)
 	end)
 
-	bindRowPress(MobileCornerWalkRow, function()
+	bindRowPress(MobileCornerWalkRow and MobileCornerWalkRow:FindFirstChild("SwitchHitbox"), function()
 		setMobileCornerWalkButtonState(not mobileCornerWalkButtonVisible)
 	end)
 
-	bindRowPress(MobileBeastSlowRow, function()
+	bindRowPress(MobileBeastSlowRow and MobileBeastSlowRow:FindFirstChild("SwitchHitbox"), function()
 		setMobileBeastSlowButtonState(not mobileBeastSlowButtonVisible)
 	end)
 
-	bindRowPress(MobileXrayRow, function()
+	bindRowPress(MobileXrayRow and MobileXrayRow:FindFirstChild("SwitchHitbox"), function()
 		isXrayEnabled = not isXrayEnabled
 		applyCurrentNonSpamCooldown()
 		updateMobilePanelButtons()
+		saveUserPreferences()
 	end)
 
-	bindRowPress(MobileRealXrayRow, function()
+	bindRowPress(MobileRealXrayRow and MobileRealXrayRow:FindFirstChild("SwitchHitbox"), function()
 		setXrayEnabled(not realXrayEnabled)
+	end)
+
+	bindRowPress(MobileDance2TurnRow and MobileDance2TurnRow:FindFirstChild("SwitchHitbox"), function()
+		setDance2TurnEnabled(not isDance2TurnEnabled)
+	end)
+
+	bindRowPress(MobileFloorbangEspRow and MobileFloorbangEspRow:FindFirstChild("SwitchHitbox"), function()
+		setFloorbangESPEnabled(not isFloorbangEspEnabled)
 	end)
 
 	bindRowPress(MobileNormalWallhopRow, function()
@@ -2923,6 +3084,18 @@ local function buildMobileGui()
 
 	bindRowPress(MobileConsoleWallhopRow, function()
 		setFlickMode("Console Wallhop")
+	end)
+
+	bindRowPress(MobileNormalFlickRow, function()
+		setFlickSetting("Normal Flick")
+	end)
+
+	bindRowPress(MobileSpeedFlickRow, function()
+		setFlickSetting("Speed Flick")
+	end)
+
+	bindRowPress(MobileSlowFlickRow, function()
+		setFlickSetting("Slow Flick")
 	end)
 
 	switchMobileTab("Functions")
@@ -3058,10 +3231,10 @@ local function buildPCGui()
 	setTargetTransparency(MainFrame, 0, nil)
 
 	local title = Instance.new("TextLabel")
-	title.Size = UDim2.new(1, -60, 0, 30)
+	title.Size = UDim2.new(0, 130, 0, 30)
 	title.Position = UDim2.new(0, 18, 0, 8)
 	title.BackgroundTransparency = 1
-	title.Text = "FtF Wallhop"
+	title.Text = "Cerber X"
 	title.TextColor3 = Color3.fromRGB(255,255,255)
 	title.Font = Enum.Font.GothamBold
 	title.TextSize = 28
@@ -3069,6 +3242,15 @@ local function buildPCGui()
 	title.Parent = MainFrame
 	noTextStroke(title)
 	setTargetTransparency(title, 1, 0)
+
+	local headerIcon = Instance.new("ImageLabel")
+	headerIcon.Size = UDim2.new(0, 42, 0, 42)
+	headerIcon.Position = UDim2.new(0, 128, 0, 10)
+	headerIcon.BackgroundTransparency = 1
+	headerIcon.Image = CERBER_ICON_IMAGE
+	headerIcon.ScaleType = Enum.ScaleType.Fit
+	headerIcon.Parent = MainFrame
+	setTargetTransparency(headerIcon, 1, 0)
 
 	local sub = Instance.new("TextLabel")
 	sub.Size = UDim2.new(1, -60, 0, 16)
@@ -3115,33 +3297,58 @@ local function buildPCGui()
 	PcTabFlicks = createPcTabButton(MainFrame, 120, "Flicks")
 	PcTabSettings = createPcTabButton(MainFrame, 222, "Settings")
 
-	PcFunctionsPage = Instance.new("Frame")
-	PcFunctionsPage.Size = UDim2.new(1, 0, 1, -122)
-	PcFunctionsPage.Position = UDim2.new(0, 0, 0, 116)
+	PcFunctionsPage = Instance.new("ScrollingFrame")
+	PcFunctionsPage.Size = UDim2.new(1, 0, 1, -116)
+	PcFunctionsPage.Position = UDim2.new(0, 0, 0, 110)
 	PcFunctionsPage.BackgroundTransparency = 1
+	PcFunctionsPage.BorderSizePixel = 0
+	PcFunctionsPage.ScrollBarThickness = 4
+	PcFunctionsPage.ScrollingDirection = Enum.ScrollingDirection.Y
+	PcFunctionsPage.CanvasSize = UDim2.new(0, 0, 0, 190)
 	PcFunctionsPage.Parent = MainFrame
 
-	PcFlicksPage = Instance.new("Frame")
-	PcFlicksPage.Size = UDim2.new(1, 0, 1, -122)
-	PcFlicksPage.Position = UDim2.new(0, 0, 0, 116)
+	PcFlicksPage = Instance.new("ScrollingFrame")
+	PcFlicksPage.Size = UDim2.new(1, 0, 1, -94)
+	PcFlicksPage.Position = UDim2.new(0, 0, 0, 88)
 	PcFlicksPage.BackgroundTransparency = 1
+	PcFlicksPage.BorderSizePixel = 0
+	PcFlicksPage.ScrollBarThickness = 4
+	PcFlicksPage.ScrollingDirection = Enum.ScrollingDirection.Y
+	PcFlicksPage.CanvasSize = UDim2.new(0, 0, 0, 295)
 	PcFlicksPage.Visible = false
 	PcFlicksPage.Parent = MainFrame
 
-	PcSettingsPage = Instance.new("Frame")
-	PcSettingsPage.Size = UDim2.new(1, 0, 1, -122)
-	PcSettingsPage.Position = UDim2.new(0, 0, 0, 116)
+	PcSettingsPage = Instance.new("ScrollingFrame")
+	PcSettingsPage.Size = UDim2.new(1, 0, 1, -94)
+	PcSettingsPage.Position = UDim2.new(0, 0, 0, 88)
 	PcSettingsPage.BackgroundTransparency = 1
+	PcSettingsPage.BorderSizePixel = 0
+	PcSettingsPage.ScrollBarThickness = 4
+	PcSettingsPage.ScrollingDirection = Enum.ScrollingDirection.Y
+	PcSettingsPage.CanvasSize = UDim2.new(0, 0, 0, 230)
 	PcSettingsPage.Visible = false
 	PcSettingsPage.Parent = MainFrame
 
+	PcKeybindsTitle = Instance.new("TextLabel")
+	PcKeybindsTitle.Size = UDim2.new(1, -36, 0, 20)
+	PcKeybindsTitle.Position = UDim2.new(0, 18, 0, 0)
+	PcKeybindsTitle.BackgroundTransparency = 1
+	PcKeybindsTitle.Text = "Keybinds"
+	PcKeybindsTitle.TextColor3 = Color3.fromRGB(255,255,255)
+	PcKeybindsTitle.Font = Enum.Font.GothamBold
+	PcKeybindsTitle.TextSize = 14
+	PcKeybindsTitle.TextXAlignment = Enum.TextXAlignment.Left
+	PcKeybindsTitle.Parent = PcFunctionsPage
+	noTextStroke(PcKeybindsTitle)
+	setTargetTransparency(PcKeybindsTitle, 1, 0)
+
 	HideGuiBindButton = Instance.new("TextButton")
-	HideGuiBindButton.Size = UDim2.new(1, -36, 0, 22)
-	HideGuiBindButton.Position = UDim2.new(0, 18, 0, 0)
+	HideGuiBindButton.Size = UDim2.new(1, -36, 0, 20)
+	HideGuiBindButton.Position = UDim2.new(0, 18, 0, 22)
 	HideGuiBindButton.BackgroundTransparency = 1
 	HideGuiBindButton.TextColor3 = Color3.fromRGB(255,255,255)
 	HideGuiBindButton.Font = Enum.Font.Gotham
-	HideGuiBindButton.TextSize = 15
+	HideGuiBindButton.TextSize = 14
 	HideGuiBindButton.TextXAlignment = Enum.TextXAlignment.Left
 	HideGuiBindButton.AutoButtonColor = false
 	HideGuiBindButton.Parent = PcFunctionsPage
@@ -3149,12 +3356,12 @@ local function buildPCGui()
 	setTargetTransparency(HideGuiBindButton, 1, 0)
 
 	ToggleBindButton = Instance.new("TextButton")
-	ToggleBindButton.Size = UDim2.new(1, -36, 0, 22)
-	ToggleBindButton.Position = UDim2.new(0, 18, 0, 24)
+	ToggleBindButton.Size = UDim2.new(1, -36, 0, 20)
+	ToggleBindButton.Position = UDim2.new(0, 18, 0, 42)
 	ToggleBindButton.BackgroundTransparency = 1
 	ToggleBindButton.TextColor3 = Color3.fromRGB(255,255,255)
 	ToggleBindButton.Font = Enum.Font.Gotham
-	ToggleBindButton.TextSize = 15
+	ToggleBindButton.TextSize = 14
 	ToggleBindButton.TextXAlignment = Enum.TextXAlignment.Left
 	ToggleBindButton.AutoButtonColor = false
 	ToggleBindButton.Parent = PcFunctionsPage
@@ -3162,12 +3369,12 @@ local function buildPCGui()
 	setTargetTransparency(ToggleBindButton, 1, 0)
 
 	BeastSlowBindButton = Instance.new("TextButton")
-	BeastSlowBindButton.Size = UDim2.new(1, -36, 0, 22)
-	BeastSlowBindButton.Position = UDim2.new(0, 18, 0, 96)
+	BeastSlowBindButton.Size = UDim2.new(1, -36, 0, 20)
+	BeastSlowBindButton.Position = UDim2.new(0, 18, 0, 102)
 	BeastSlowBindButton.BackgroundTransparency = 1
 	BeastSlowBindButton.TextColor3 = Color3.fromRGB(255,255,255)
 	BeastSlowBindButton.Font = Enum.Font.Gotham
-	BeastSlowBindButton.TextSize = 15
+	BeastSlowBindButton.TextSize = 14
 	BeastSlowBindButton.TextXAlignment = Enum.TextXAlignment.Left
 	BeastSlowBindButton.AutoButtonColor = false
 	BeastSlowBindButton.Parent = PcFunctionsPage
@@ -3175,12 +3382,12 @@ local function buildPCGui()
 	setTargetTransparency(BeastSlowBindButton, 1, 0)
 
 	CornerWalkBindButton = Instance.new("TextButton")
-	CornerWalkBindButton.Size = UDim2.new(1, -36, 0, 22)
-	CornerWalkBindButton.Position = UDim2.new(0, 18, 0, 72)
+	CornerWalkBindButton.Size = UDim2.new(1, -36, 0, 20)
+	CornerWalkBindButton.Position = UDim2.new(0, 18, 0, 82)
 	CornerWalkBindButton.BackgroundTransparency = 1
 	CornerWalkBindButton.TextColor3 = Color3.fromRGB(255,255,255)
 	CornerWalkBindButton.Font = Enum.Font.Gotham
-	CornerWalkBindButton.TextSize = 15
+	CornerWalkBindButton.TextSize = 14
 	CornerWalkBindButton.TextXAlignment = Enum.TextXAlignment.Left
 	CornerWalkBindButton.AutoButtonColor = false
 	CornerWalkBindButton.Parent = PcFunctionsPage
@@ -3188,12 +3395,12 @@ local function buildPCGui()
 	setTargetTransparency(CornerWalkBindButton, 1, 0)
 
 	XrayBindButton = Instance.new("TextButton")
-	XrayBindButton.Size = UDim2.new(1, -36, 0, 22)
-	XrayBindButton.Position = UDim2.new(0, 18, 0, 48)
+	XrayBindButton.Size = UDim2.new(1, -36, 0, 20)
+	XrayBindButton.Position = UDim2.new(0, 18, 0, 62)
 	XrayBindButton.BackgroundTransparency = 1
 	XrayBindButton.TextColor3 = Color3.fromRGB(255,255,255)
 	XrayBindButton.Font = Enum.Font.Gotham
-	XrayBindButton.TextSize = 15
+	XrayBindButton.TextSize = 14
 	XrayBindButton.TextXAlignment = Enum.TextXAlignment.Left
 	XrayBindButton.AutoButtonColor = false
 	XrayBindButton.Parent = PcFunctionsPage
@@ -3201,19 +3408,58 @@ local function buildPCGui()
 	setTargetTransparency(XrayBindButton, 1, 0)
 
 	RealXrayBindButton = Instance.new("TextButton")
-	RealXrayBindButton.Size = UDim2.new(1, -36, 0, 22)
-	RealXrayBindButton.Position = UDim2.new(0, 18, 0, 120)
+	RealXrayBindButton.Size = UDim2.new(1, -36, 0, 20)
+	RealXrayBindButton.Position = UDim2.new(0, 18, 0, 122)
 	RealXrayBindButton.BackgroundTransparency = 1
 	RealXrayBindButton.TextColor3 = Color3.fromRGB(255,255,255)
 	RealXrayBindButton.Font = Enum.Font.Gotham
-	RealXrayBindButton.TextSize = 15
+	RealXrayBindButton.TextSize = 14
 	RealXrayBindButton.TextXAlignment = Enum.TextXAlignment.Left
 	RealXrayBindButton.AutoButtonColor = false
 	RealXrayBindButton.Parent = PcFunctionsPage
 	noTextStroke(RealXrayBindButton)
 	setTargetTransparency(RealXrayBindButton, 1, 0)
 
-	PcSettingsNonSpamTitle = createSettingsLabel(PcSettingsPage, 0, "Non-spam Time")
+	ClipDance2BindButton = Instance.new("TextButton")
+	ClipDance2BindButton.Size = UDim2.new(1, -36, 0, 20)
+	ClipDance2BindButton.Position = UDim2.new(0, 18, 0, 142)
+	ClipDance2BindButton.BackgroundTransparency = 1
+	ClipDance2BindButton.TextColor3 = Color3.fromRGB(255,255,255)
+	ClipDance2BindButton.Font = Enum.Font.Gotham
+	ClipDance2BindButton.TextSize = 14
+	ClipDance2BindButton.TextXAlignment = Enum.TextXAlignment.Left
+	ClipDance2BindButton.AutoButtonColor = false
+	ClipDance2BindButton.Parent = PcFunctionsPage
+	noTextStroke(ClipDance2BindButton)
+	setTargetTransparency(ClipDance2BindButton, 1, 0)
+
+	FloorbangEspBindButton = Instance.new("TextButton")
+	FloorbangEspBindButton.Size = UDim2.new(1, -36, 0, 20)
+	FloorbangEspBindButton.Position = UDim2.new(0, 18, 0, 162)
+	FloorbangEspBindButton.BackgroundTransparency = 1
+	FloorbangEspBindButton.TextColor3 = Color3.fromRGB(255,255,255)
+	FloorbangEspBindButton.Font = Enum.Font.Gotham
+	FloorbangEspBindButton.TextSize = 14
+	FloorbangEspBindButton.TextXAlignment = Enum.TextXAlignment.Left
+	FloorbangEspBindButton.AutoButtonColor = false
+	FloorbangEspBindButton.Parent = PcFunctionsPage
+	noTextStroke(FloorbangEspBindButton)
+	setTargetTransparency(FloorbangEspBindButton, 1, 0)
+
+	PcMinimalSettingsTitle = Instance.new("TextLabel")
+	PcMinimalSettingsTitle.Size = UDim2.new(1, -36, 0, 20)
+	PcMinimalSettingsTitle.Position = UDim2.new(0, 18, 0, 0)
+	PcMinimalSettingsTitle.BackgroundTransparency = 1
+	PcMinimalSettingsTitle.Text = "Minimal Settings"
+	PcMinimalSettingsTitle.TextColor3 = Color3.fromRGB(255,255,255)
+	PcMinimalSettingsTitle.Font = Enum.Font.GothamBold
+	PcMinimalSettingsTitle.TextSize = 14
+	PcMinimalSettingsTitle.TextXAlignment = Enum.TextXAlignment.Left
+	PcMinimalSettingsTitle.Parent = PcSettingsPage
+	noTextStroke(PcMinimalSettingsTitle)
+	setTargetTransparency(PcMinimalSettingsTitle, 1, 0)
+
+	PcSettingsNonSpamTitle = createSettingsLabel(PcSettingsPage, 30, "Non-spam Time")
 	PcSettingsNonSpamTitle.TextSize = 15
 	PcSettingsNonSpamTitle.ZIndex = 40
 	PcSettingsNonSpamTitle.TextTransparency = 0
@@ -3221,7 +3467,7 @@ local function buildPCGui()
 
 	PcSettingsNonSpamBox = Instance.new("TextBox")
 	PcSettingsNonSpamBox.Size = UDim2.new(0, 62, 0, 28)
-	PcSettingsNonSpamBox.Position = UDim2.new(1, -80, 0, -2)
+	PcSettingsNonSpamBox.Position = UDim2.new(1, -80, 0, 28)
 	PcSettingsNonSpamBox.BackgroundColor3 = Color3.fromRGB(0,0,0)
 	PcSettingsNonSpamBox.TextColor3 = Color3.fromRGB(255,255,255)
 	PcSettingsNonSpamBox.Font = Enum.Font.GothamBold
@@ -3242,7 +3488,7 @@ local function buildPCGui()
 		applyNonSpamSettingFromBox(PcSettingsNonSpamBox)
 	end)
 
-	PcSettingsNonSpamAfterTitle = createSettingsLabel(PcSettingsPage, 30, "Non-spam After")
+	PcSettingsNonSpamAfterTitle = createSettingsLabel(PcSettingsPage, 60, "Non-spam After")
 	PcSettingsNonSpamAfterTitle.TextSize = 15
 	PcSettingsNonSpamAfterTitle.ZIndex = 40
 	PcSettingsNonSpamAfterTitle.TextTransparency = 0
@@ -3250,7 +3496,7 @@ local function buildPCGui()
 
 	PcSettingsNonSpamAfterBox = Instance.new("TextBox")
 	PcSettingsNonSpamAfterBox.Size = UDim2.new(0, 62, 0, 28)
-	PcSettingsNonSpamAfterBox.Position = UDim2.new(1, -80, 0, 28)
+	PcSettingsNonSpamAfterBox.Position = UDim2.new(1, -80, 0, 58)
 	PcSettingsNonSpamAfterBox.BackgroundColor3 = Color3.fromRGB(0,0,0)
 	PcSettingsNonSpamAfterBox.TextColor3 = Color3.fromRGB(255,255,255)
 	PcSettingsNonSpamAfterBox.Font = Enum.Font.GothamBold
@@ -3271,7 +3517,36 @@ local function buildPCGui()
 		applyNonSpamAfterSettingFromBox(PcSettingsNonSpamAfterBox)
 	end)
 
-	PcCwalkRangeTitle = createSettingsLabel(PcSettingsPage, 60, "C-walk Range")
+	PcDance2TimeTitle = createSettingsLabel(PcSettingsPage, 90, "Dance2 Time")
+	PcDance2TimeTitle.TextSize = 15
+	PcDance2TimeTitle.ZIndex = 40
+	PcDance2TimeTitle.TextTransparency = 0
+	setTargetTransparency(PcDance2TimeTitle, 1, 0)
+
+	PcDance2TimeBox = Instance.new("TextBox")
+	PcDance2TimeBox.Size = UDim2.new(0, 62, 0, 28)
+	PcDance2TimeBox.Position = UDim2.new(1, -80, 0, 88)
+	PcDance2TimeBox.BackgroundColor3 = Color3.fromRGB(0,0,0)
+	PcDance2TimeBox.TextColor3 = Color3.fromRGB(255,255,255)
+	PcDance2TimeBox.Font = Enum.Font.GothamBold
+	PcDance2TimeBox.TextSize = 13
+	PcDance2TimeBox.Text = tostring(dance2TimeValue) .. "ms"
+	PcDance2TimeBox.ClearTextOnFocus = true
+	PcDance2TimeBox.ZIndex = 41
+	PcDance2TimeBox.Parent = PcSettingsPage
+	Instance.new("UICorner", PcDance2TimeBox).CornerRadius = UDim.new(0, 8)
+	PcDance2TimeBoxStroke = Instance.new("UIStroke")
+	PcDance2TimeBoxStroke.Color = Color3.fromRGB(35,35,35)
+	PcDance2TimeBoxStroke.Thickness = 1
+	PcDance2TimeBoxStroke.Transparency = 0.08
+	PcDance2TimeBoxStroke.Parent = PcDance2TimeBox
+	noTextStroke(PcDance2TimeBox)
+	setTargetTransparency(PcDance2TimeBox, 0, 0)
+	PcDance2TimeBox.FocusLost:Connect(function()
+		applyDance2TimeSettingFromBox(PcDance2TimeBox)
+	end)
+
+	PcCwalkRangeTitle = createSettingsLabel(PcSettingsPage, 120, "C-walk Range")
 	PcCwalkRangeTitle.TextSize = 15
 	PcCwalkRangeTitle.ZIndex = 40
 	PcCwalkRangeTitle.TextTransparency = 0
@@ -3279,7 +3554,7 @@ local function buildPCGui()
 
 	PcCwalkRangeBox = Instance.new("TextBox")
 	PcCwalkRangeBox.Size = UDim2.new(0, 62, 0, 28)
-	PcCwalkRangeBox.Position = UDim2.new(1, -80, 0, 58)
+	PcCwalkRangeBox.Position = UDim2.new(1, -80, 0, 118)
 	PcCwalkRangeBox.BackgroundColor3 = Color3.fromRGB(0,0,0)
 	PcCwalkRangeBox.TextColor3 = Color3.fromRGB(255,255,255)
 	PcCwalkRangeBox.Font = Enum.Font.GothamBold
@@ -3300,7 +3575,7 @@ local function buildPCGui()
 		applyCwalkRangeSettingFromBox(PcCwalkRangeBox)
 	end)
 
-	PcSettingsXrayTitle = createSettingsLabel(PcSettingsPage, 90, "X-ray Opacity")
+	PcSettingsXrayTitle = createSettingsLabel(PcSettingsPage, 150, "X-ray Opacity")
 	PcSettingsXrayTitle.TextSize = 15
 	PcSettingsXrayTitle.ZIndex = 40
 	PcSettingsXrayTitle.TextTransparency = 0
@@ -3308,7 +3583,7 @@ local function buildPCGui()
 
 	PcSettingsXrayBox = Instance.new("TextBox")
 	PcSettingsXrayBox.Size = UDim2.new(0, 62, 0, 28)
-	PcSettingsXrayBox.Position = UDim2.new(1, -80, 0, 88)
+	PcSettingsXrayBox.Position = UDim2.new(1, -80, 0, 148)
 	PcSettingsXrayBox.BackgroundColor3 = Color3.fromRGB(0,0,0)
 	PcSettingsXrayBox.TextColor3 = Color3.fromRGB(255,255,255)
 	PcSettingsXrayBox.Font = Enum.Font.GothamBold
@@ -3329,18 +3604,48 @@ local function buildPCGui()
 		applyXraySettingFromBox(PcSettingsXrayBox)
 	end)
 
-	PcNormalWallhopButton = createPcActionButton(PcFlicksPage, 0, "Normal Wallhop")
-	PcNoMoveWallhopButton = createPcActionButton(PcFlicksPage, 28, "Visual Wallhop")
-	Pc360WallhopButton = createPcActionButton(PcFlicksPage, 56, "360° Wallhop")
-	PcConsoleWallhopButton = createPcActionButton(PcFlicksPage, 84, "Console Wallhop")
+	PcFlickTypesTitle = Instance.new("TextLabel")
+	PcFlickTypesTitle.Size = UDim2.new(1, -36, 0, 20)
+	PcFlickTypesTitle.Position = UDim2.new(0, 18, 0, 0)
+	PcFlickTypesTitle.BackgroundTransparency = 1
+	PcFlickTypesTitle.Text = "Flick Types"
+	PcFlickTypesTitle.TextColor3 = Color3.fromRGB(255,255,255)
+	PcFlickTypesTitle.Font = Enum.Font.GothamBold
+	PcFlickTypesTitle.TextSize = 14
+	PcFlickTypesTitle.TextXAlignment = Enum.TextXAlignment.Left
+	PcFlickTypesTitle.Parent = PcFlicksPage
+	noTextStroke(PcFlickTypesTitle)
+	setTargetTransparency(PcFlickTypesTitle, 1, 0)
+
+	PcNormalWallhopButton = createPcActionButton(PcFlicksPage, 24, "Normal Wallhop")
+	PcNoMoveWallhopButton = createPcActionButton(PcFlicksPage, 52, "Visual Wallhop")
+	Pc360WallhopButton = createPcActionButton(PcFlicksPage, 80, "360° Wallhop")
+	PcConsoleWallhopButton = createPcActionButton(PcFlicksPage, 108, "Console Wallhop")
+
+	PcFlickSettingsTitle = Instance.new("TextLabel")
+	PcFlickSettingsTitle.Size = UDim2.new(1, -36, 0, 20)
+	PcFlickSettingsTitle.Position = UDim2.new(0, 18, 0, 140)
+	PcFlickSettingsTitle.BackgroundTransparency = 1
+	PcFlickSettingsTitle.Text = "Flick Settings"
+	PcFlickSettingsTitle.TextColor3 = Color3.fromRGB(255,255,255)
+	PcFlickSettingsTitle.Font = Enum.Font.GothamBold
+	PcFlickSettingsTitle.TextSize = 14
+	PcFlickSettingsTitle.TextXAlignment = Enum.TextXAlignment.Left
+	PcFlickSettingsTitle.Parent = PcFlicksPage
+	noTextStroke(PcFlickSettingsTitle)
+	setTargetTransparency(PcFlickSettingsTitle, 1, 0)
+
+	PcNormalFlickButton = createPcActionButton(PcFlicksPage, 164, "Normal Flick")
+	PcSpeedFlickButton = createPcActionButton(PcFlicksPage, 192, "Speed Flick")
+	PcSlowFlickButton = createPcActionButton(PcFlicksPage, 220, "Slow Flick")
 
 	PcCurrentUsingLabel = Instance.new("TextLabel")
-	PcCurrentUsingLabel.Size = UDim2.new(1, -36, 0, 26)
-	PcCurrentUsingLabel.Position = UDim2.new(0, 18, 0, 116)
+	PcCurrentUsingLabel.Size = UDim2.new(1, -36, 0, 32)
+	PcCurrentUsingLabel.Position = UDim2.new(0, 18, 0, 250)
 	PcCurrentUsingLabel.BackgroundTransparency = 1
 	PcCurrentUsingLabel.TextColor3 = Color3.fromRGB(200,200,200)
 	PcCurrentUsingLabel.Font = Enum.Font.Gotham
-	PcCurrentUsingLabel.TextSize = 14
+	PcCurrentUsingLabel.TextSize = 12
 	PcCurrentUsingLabel.TextWrapped = true
 	PcCurrentUsingLabel.TextXAlignment = Enum.TextXAlignment.Left
 	PcCurrentUsingLabel.TextYAlignment = Enum.TextYAlignment.Top
@@ -3353,11 +3658,12 @@ local function buildPCGui()
 	footer.Size = UDim2.new(1, -36, 0, 14)
 	footer.Position = UDim2.new(0, 18, 1, -14)
 	footer.BackgroundTransparency = 1
-	footer.Text = "the best ftf wallhop ever - nyhito panel"
+	footer.Text = ""
 	footer.TextColor3 = Color3.fromRGB(95,95,95)
 	footer.Font = Enum.Font.Gotham
 	footer.TextSize = 11
 	footer.TextXAlignment = Enum.TextXAlignment.Left
+	footer.Visible = false
 	footer.Parent = MainFrame
 	noTextStroke(footer)
 	setTargetTransparency(footer, 1, 0)
@@ -3366,7 +3672,7 @@ local function buildPCGui()
 	MiniButton.Size = UDim2.new(0, 150, 0, 42)
 	MiniButton.Position = MainFrame.Position
 	MiniButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	MiniButton.Text = "FtF Wallhop"
+	MiniButton.Text = "Cerber X"
 	MiniButton.TextColor3 = Color3.fromRGB(220,220,220)
 	MiniButton.Font = Enum.Font.GothamBold
 	MiniButton.TextSize = 22
@@ -3440,6 +3746,37 @@ local function buildPCGui()
 		switchPcTab("Settings")
 	end)
 
+	if ClipDance2BindButton then
+		ClipDance2BindButton.MouseButton1Click:Connect(function()
+			waitingForClipDance2Key = true
+			waitingForHideKey = false
+			waitingForToggleKey = false
+			waitingForBeastSlowKey = false
+			waitingForCornerWalkKey = false
+			waitingForXrayKey = false
+			waitingForNonSpamKey = false
+			waitingForFloorbangEspKey = false
+			updateBindButtons()
+			showNotice("Press a key...")
+		end)
+	end
+
+	if FloorbangEspBindButton then
+		FloorbangEspBindButton.MouseButton1Click:Connect(function()
+			waitingForFloorbangEspKey = true
+			waitingForHideKey = false
+			waitingForToggleKey = false
+			waitingForBeastSlowKey = false
+			waitingForCornerWalkKey = false
+			waitingForXrayKey = false
+			waitingForNonSpamKey = false
+			waitingForClipDance2Key = false
+			waitingForFloorbangEspKey = false
+			updateBindButtons()
+			showNotice("Press a key...")
+		end)
+	end
+
 	HideGuiBindButton.MouseButton1Click:Connect(function()
 		waitingForHideKey = true
 		waitingForToggleKey = false
@@ -3447,6 +3784,8 @@ local function buildPCGui()
 		waitingForCornerWalkKey = false
 		waitingForXrayKey = false
 		waitingForNonSpamKey = false
+		waitingForClipDance2Key = false
+		waitingForFloorbangEspKey = false
 		updateBindButtons()
 		showNotice("Press a key...")
 	end)
@@ -3458,6 +3797,8 @@ local function buildPCGui()
 		waitingForCornerWalkKey = false
 		waitingForXrayKey = false
 		waitingForNonSpamKey = false
+		waitingForClipDance2Key = false
+		waitingForFloorbangEspKey = false
 		updateBindButtons()
 		showNotice("Press a key...")
 	end)
@@ -3469,6 +3810,8 @@ local function buildPCGui()
 		waitingForCornerWalkKey = false
 		waitingForXrayKey = false
 		waitingForNonSpamKey = false
+		waitingForClipDance2Key = false
+		waitingForFloorbangEspKey = false
 		updateBindButtons()
 		showNotice("Press a key...")
 	end)
@@ -3480,6 +3823,8 @@ local function buildPCGui()
 		waitingForBeastSlowKey = false
 		waitingForXrayKey = false
 		waitingForNonSpamKey = false
+		waitingForClipDance2Key = false
+		waitingForFloorbangEspKey = false
 		updateBindButtons()
 		showNotice("Press a key...")
 	end)
@@ -3502,6 +3847,8 @@ local function buildPCGui()
 		waitingForBeastSlowKey = false
 		waitingForCornerWalkKey = false
 		waitingForNonSpamKey = false
+		waitingForClipDance2Key = false
+		waitingForFloorbangEspKey = false
 		updateBindButtons()
 		showNotice("Press a key...")
 	end)
@@ -3527,6 +3874,18 @@ local function buildPCGui()
 
 	PcConsoleWallhopButton.MouseButton1Click:Connect(function()
 		setFlickMode("Console Wallhop")
+	end)
+
+	PcNormalFlickButton.MouseButton1Click:Connect(function()
+		setFlickSetting("Normal Flick")
+	end)
+
+	PcSpeedFlickButton.MouseButton1Click:Connect(function()
+		setFlickSetting("Speed Flick")
+	end)
+
+	PcSlowFlickButton.MouseButton1Click:Connect(function()
+		setFlickSetting("Slow Flick")
 	end)
 
 	switchPcTab("Functions")
@@ -3812,9 +4171,43 @@ local function pickNextFlick(useSpecialFirst)
 	return math.rad(angle)
 end
 
+local function getFlickSettingSpeedScale()
+	if currentFlickSetting == "Speed Flick" then
+		return 0.78
+	elseif currentFlickSetting == "Slow Flick" then
+		return 1.24
+	end
+	return 1
+end
+
+local function getFlickSettingStepAdd()
+	if currentFlickSetting == "Speed Flick" then
+		return 0
+	elseif currentFlickSetting == "Slow Flick" then
+		return 1
+	end
+	return 0
+end
+
+local function applyFlickSettingProfile(profile)
+	local scale = getFlickSettingSpeedScale()
+	local stepAdd = getFlickSettingStepAdd()
+
+	profile.goSteps = math.max(1, (tonumber(profile.goSteps) or 1) + stepAdd)
+	profile.returnSteps = math.max(1, (tonumber(profile.returnSteps) or 1) + stepAdd)
+	profile.goDelayMin = (tonumber(profile.goDelayMin) or 0) * scale
+	profile.goDelayMax = (tonumber(profile.goDelayMax) or 0) * scale
+	profile.returnDelayMin = (tonumber(profile.returnDelayMin) or 0) * scale
+	profile.returnDelayMax = (tonumber(profile.returnDelayMax) or 0) * scale
+	profile.holdTime = (tonumber(profile.holdTime) or 0) * (currentFlickSetting == "Speed Flick" and 0.55 or currentFlickSetting == "Slow Flick" and 1.35 or 1)
+	profile.overshootBaseDelay = (tonumber(profile.overshootBaseDelay) or 0) * scale
+
+	return profile
+end
+
 local function getFlickProfile(useSpecialFirst)
 	if useSpecialFirst then
-		return {
+		return applyFlickSettingProfile({
 			goSteps = math.random(3, 4),
 			goDelayMin = 0.0130,
 			goDelayMax = 0.0165,
@@ -3825,13 +4218,13 @@ local function getFlickProfile(useSpecialFirst)
 			overshootMin = 22,
 			overshootMax = 25,
 			overshootBaseDelay = 0.0085
-		}
+		})
 	end
 
 	local flickRoll = math.random()
 
 	if flickRoll < 0.10 then
-		return {
+		return applyFlickSettingProfile({
 			goSteps = math.random(3, 4),
 			goDelayMin = 0.0118,
 			goDelayMax = 0.0148,
@@ -3842,9 +4235,9 @@ local function getFlickProfile(useSpecialFirst)
 			overshootMin = 12,
 			overshootMax = 18,
 			overshootBaseDelay = 0.0068
-		}
+		})
 	elseif flickRoll < 0.40 then
-		return {
+		return applyFlickSettingProfile({
 			goSteps = math.random(4, 5),
 			goDelayMin = 0.0122,
 			goDelayMax = 0.0155,
@@ -3855,9 +4248,9 @@ local function getFlickProfile(useSpecialFirst)
 			overshootMin = 14,
 			overshootMax = 20,
 			overshootBaseDelay = 0.0075
-		}
+		})
 	else
-		return {
+		return applyFlickSettingProfile({
 			goSteps = math.random(3, 4),
 			goDelayMin = 0.0128,
 			goDelayMax = 0.0162,
@@ -3868,7 +4261,7 @@ local function getFlickProfile(useSpecialFirst)
 			overshootMin = 16,
 			overshootMax = 22,
 			overshootBaseDelay = 0.0085
-		}
+		})
 	end
 end
 
@@ -4063,24 +4456,33 @@ local function performNormalWallhop()
 end
 
 
+local function apply360FlickSettingProfile(profile)
+	local scale = getFlickSettingSpeedScale()
+	local stepAdd = currentFlickSetting == "Speed Flick" and -1 or currentFlickSetting == "Slow Flick" and 1 or 0
+
+	profile.steps = math.max(4, (tonumber(profile.steps) or 8) + stepAdd)
+	profile.stepDelay = (tonumber(profile.stepDelay) or 0.0042) * scale
+	return profile
+end
+
 local function get360FlickProfile()
 	local flickRoll = math.random()
 
 	if flickRoll < 0.10 then
-		return {
+		return apply360FlickSettingProfile({
 			steps = 8,
 			stepDelay = 0.0038
-		}
+		})
 	elseif flickRoll < 0.40 then
-		return {
+		return apply360FlickSettingProfile({
 			steps = 9,
 			stepDelay = 0.0042
-		}
+		})
 	else
-		return {
+		return apply360FlickSettingProfile({
 			steps = 10,
 			stepDelay = 0.0045
-		}
+		})
 	end
 end
 
@@ -4320,7 +4722,7 @@ local function performConsoleWallhop()
 	specialFirstFlickArmed = false
 
 	forceWallhopJump(hum)
-	lockBodyRotation(hum, 0.62)
+	lockBodyRotation(hum, currentFlickSetting == "Speed Flick" and 0.54 or currentFlickSetting == "Slow Flick" and 0.70 or 0.62)
 	pcall(function() hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0) end)
 
 	local function getCameraFlat()
@@ -4348,8 +4750,8 @@ local function performConsoleWallhop()
 		hrp.CFrame = CFrame.new(hrp.Position) * CFrame.Angles(0, flickYaw, 0)
 
 		task.spawn(function()
-			local returnSteps = 20
-			local stepDelay = 0.040
+			local returnSteps = currentFlickSetting == "Speed Flick" and 16 or currentFlickSetting == "Slow Flick" and 22 or 20
+			local stepDelay = currentFlickSetting == "Speed Flick" and 0.032 or currentFlickSetting == "Slow Flick" and 0.046 or 0.040
 
 			for i = 1, returnSteps do
 				if not hrp or not hrp.Parent then
@@ -4364,7 +4766,7 @@ local function performConsoleWallhop()
 				local liveTargetYaw = getYawFromVector(liveFlat)
 				local currentYaw = math.atan2(-hrp.CFrame.LookVector.X, -hrp.CFrame.LookVector.Z)
 				local delta = wrapAngle(liveTargetYaw - currentYaw)
-				local nextYaw = currentYaw + (delta * 0.03)
+				local nextYaw = currentYaw + (delta * (currentFlickSetting == "Speed Flick" and 0.040 or currentFlickSetting == "Slow Flick" and 0.024 or 0.03))
 
 				hrp.CFrame = CFrame.new(hrp.Position) * CFrame.Angles(0, nextYaw, 0)
 
@@ -4773,6 +5175,7 @@ end
 RunService.Heartbeat:Connect(function()
 	if not isThisScriptActive() then
 		removeCornerWalkFloor()
+		restoreDance2Noclip()
 		return
 	end
 
@@ -4905,7 +5308,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 
 	if selectedMode == "PC" then
 		if waitingForHideKey then
-			if key ~= toggleScriptKey and key ~= toggleBeastSlowKey and key ~= toggleCornerWalkKey and key ~= toggleXrayKey and key ~= toggleNonSpamKey then
+			if key ~= toggleScriptKey and key ~= toggleBeastSlowKey and key ~= toggleCornerWalkKey and key ~= toggleXrayKey and key ~= toggleNonSpamKey and key ~= toggleClipDance2Key and key ~= toggleFloorbangEspKey then
 				hideGuiKey = key
 				waitingForHideKey = false
 				savePCKeybinds()
@@ -4918,7 +5321,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		end
 
 		if waitingForToggleKey then
-			if key ~= hideGuiKey and key ~= toggleBeastSlowKey and key ~= toggleCornerWalkKey and key ~= toggleXrayKey and key ~= toggleNonSpamKey then
+			if key ~= hideGuiKey and key ~= toggleBeastSlowKey and key ~= toggleCornerWalkKey and key ~= toggleXrayKey and key ~= toggleNonSpamKey and key ~= toggleClipDance2Key and key ~= toggleFloorbangEspKey then
 				toggleScriptKey = key
 				waitingForToggleKey = false
 				savePCKeybinds()
@@ -4931,7 +5334,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		end
 
 		if waitingForBeastSlowKey then
-			if key ~= hideGuiKey and key ~= toggleScriptKey and key ~= toggleCornerWalkKey and key ~= toggleXrayKey and key ~= toggleNonSpamKey then
+			if key ~= hideGuiKey and key ~= toggleScriptKey and key ~= toggleCornerWalkKey and key ~= toggleXrayKey and key ~= toggleNonSpamKey and key ~= toggleClipDance2Key and key ~= toggleFloorbangEspKey then
 				toggleBeastSlowKey = key
 				waitingForBeastSlowKey = false
 				savePCKeybinds()
@@ -4944,7 +5347,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		end
 
 		if waitingForCornerWalkKey then
-			if key ~= hideGuiKey and key ~= toggleScriptKey and key ~= toggleBeastSlowKey and key ~= toggleXrayKey and key ~= toggleNonSpamKey then
+			if key ~= hideGuiKey and key ~= toggleScriptKey and key ~= toggleBeastSlowKey and key ~= toggleXrayKey and key ~= toggleNonSpamKey and key ~= toggleClipDance2Key and key ~= toggleFloorbangEspKey then
 				toggleCornerWalkKey = key
 				waitingForCornerWalkKey = false
 				savePCKeybinds()
@@ -4957,7 +5360,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		end
 
 		if waitingForNonSpamKey then
-			if key ~= hideGuiKey and key ~= toggleScriptKey and key ~= toggleBeastSlowKey and key ~= toggleCornerWalkKey and key ~= toggleXrayKey then
+			if key ~= hideGuiKey and key ~= toggleScriptKey and key ~= toggleBeastSlowKey and key ~= toggleCornerWalkKey and key ~= toggleXrayKey and key ~= toggleClipDance2Key and key ~= toggleFloorbangEspKey then
 				toggleNonSpamKey = key
 				waitingForNonSpamKey = false
 				savePCKeybinds()
@@ -4970,12 +5373,38 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		end
 
 		if waitingForXrayKey then
-			if key ~= hideGuiKey and key ~= toggleScriptKey and key ~= toggleBeastSlowKey and key ~= toggleCornerWalkKey and key ~= toggleNonSpamKey then
+			if key ~= hideGuiKey and key ~= toggleScriptKey and key ~= toggleBeastSlowKey and key ~= toggleCornerWalkKey and key ~= toggleNonSpamKey and key ~= toggleClipDance2Key and key ~= toggleFloorbangEspKey then
 				toggleXrayKey = key
 				waitingForXrayKey = false
 				savePCKeybinds()
 				updateBindButtons()
 				showNotice("X-ray key updated")
+			else
+				showNotice("Key already in use")
+			end
+			return
+		end
+
+		if waitingForClipDance2Key then
+			if key ~= hideGuiKey and key ~= toggleScriptKey and key ~= toggleBeastSlowKey and key ~= toggleCornerWalkKey and key ~= toggleXrayKey and key ~= toggleNonSpamKey and key ~= toggleFloorbangEspKey then
+				toggleClipDance2Key = key
+				waitingForClipDance2Key = false
+				savePCKeybinds()
+				updateBindButtons()
+				showNotice("Clip Dance2 key updated")
+			else
+				showNotice("Key already in use")
+			end
+			return
+		end
+
+		if waitingForFloorbangEspKey then
+			if key ~= hideGuiKey and key ~= toggleScriptKey and key ~= toggleBeastSlowKey and key ~= toggleCornerWalkKey and key ~= toggleXrayKey and key ~= toggleNonSpamKey and key ~= toggleClipDance2Key then
+				toggleFloorbangEspKey = key
+				waitingForFloorbangEspKey = false
+				savePCKeybinds()
+				updateBindButtons()
+				showNotice("Floorbang ESP key updated")
 			else
 				showNotice("Key already in use")
 			end
@@ -5019,6 +5448,18 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 			return
 		end
 
+		if key == toggleClipDance2Key then
+			setDance2TurnEnabled(not isDance2TurnEnabled)
+			showNotice(isDance2TurnEnabled and "Clip Dance2 enabled" or "Clip Dance2 disabled")
+			return
+		end
+
+		if key == toggleFloorbangEspKey then
+			setFloorbangESPEnabled(not isFloorbangEspEnabled)
+			showNotice(isFloorbangEspEnabled and "Floorbang ESP enabled" or "Floorbang ESP disabled")
+			return
+		end
+
 		if key == toggleXrayKey then
 			setXrayEnabled(not realXrayEnabled)
 			saveUserPreferences()
@@ -5041,6 +5482,9 @@ createModeSelector(function(mode)
 	updateMobilePanelButtons()
 	updateFlickButtons()
 	applyVisibility()
+	if isFloorbangEspEnabled then
+		updateFloorbangESP()
+	end
 end)
 
-print("Best Flee The Facility | Made by Nyhito - Loaded Successfully ✅")
+print("Cerber X V1.1 • Loaded Successfully ✅")
