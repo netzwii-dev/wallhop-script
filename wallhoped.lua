@@ -1,4 +1,4 @@
--- Cerber X V1.1 (Made by nyhito)
+-- Wallhop Script (Made by nyhito)
 -- All Credits: nyhito (tester, config and uploader)
 -- The Best Flee the Facility Script
 
@@ -219,6 +219,7 @@ isWallHopping = false
 lastWallHopTime = 0
 WALLHOP_GRACE_TIME = 1.5
 WALLHOP_COOLDOWN = 0
+WALLHOP_VERTICAL_BOOST = 0.1
 
 canDoubleJump = false
 lastDoubleJump = 0
@@ -4120,10 +4121,13 @@ local function lockBodyRotation(hum, duration)
 	end)
 end
 
-local function forceWallhopJump(hum)
+local function forceWallhopJump(hum, useVerticalBoost)
 	if not hum or not hum.Parent then
 		return
 	end
+
+	local char = hum.Parent
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
 
 	jumpAnimToken += 1
 	local myToken = jumpAnimToken
@@ -4133,6 +4137,14 @@ local function forceWallhopJump(hum)
 	pcall(function()
 		hum:ChangeState(Enum.HumanoidStateType.Jumping)
 	end)
+
+	if useVerticalBoost and hrp then
+		pcall(function()
+			local velocity = hrp.AssemblyLinearVelocity
+			local boostY = math.max(velocity.Y, 46 + WALLHOP_VERTICAL_BOOST)
+			hrp.AssemblyLinearVelocity = Vector3.new(velocity.X, boostY, velocity.Z)
+		end)
+	end
 
 	task.delay(0.085, function()
 		if myToken ~= jumpAnimToken then
@@ -4354,13 +4366,14 @@ local function performNormalWallhop()
 		end)
 	end
 
+	local useVerticalBoost = not hasWallhoppedSinceLanding
 	local useSpecialFirst = specialFirstFlickArmed and not hasWallhoppedSinceLanding
 	if useSpecialFirst then
 		specialFirstFlickArmed = false
 	end
 	hasWallhoppedSinceLanding = true
 
-	forceWallhopJump(hum)
+	forceWallhopJump(hum, useVerticalBoost)
 	lockBodyRotation(hum, 0.36)
 	pcall(function() hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0) end)
 
@@ -4513,13 +4526,14 @@ local function perform360Wallhop()
 		end)
 	end
 
+	local useVerticalBoost = not hasWallhoppedSinceLanding
 	local useSpecialFirst = specialFirstFlickArmed and not hasWallhoppedSinceLanding
 	if useSpecialFirst then
 		specialFirstFlickArmed = false
 	end
 	hasWallhoppedSinceLanding = true
 
-	forceWallhopJump(hum)
+	forceWallhopJump(hum, useVerticalBoost)
 	lockBodyRotation(hum, 0.36)
 	pcall(function()
 		hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
@@ -4593,13 +4607,14 @@ local function performNoMoveWallhop()
 		return
 	end
 
+	local useVerticalBoost = not hasWallhoppedSinceLanding
 	local useSpecialFirst = specialFirstFlickArmed and not hasWallhoppedSinceLanding
 	if useSpecialFirst then
 		specialFirstFlickArmed = false
 	end
 	hasWallhoppedSinceLanding = true
 
-	forceWallhopJump(hum)
+	forceWallhopJump(hum, useVerticalBoost)
 
 	local baseYaw = hrp.Orientation.Y
 	local angle = -pickNextFlick(useSpecialFirst)
@@ -4718,10 +4733,11 @@ local function performConsoleWallhop()
 		end)
 	end
 
+	local useVerticalBoost = not hasWallhoppedSinceLanding
 	hasWallhoppedSinceLanding = true
 	specialFirstFlickArmed = false
 
-	forceWallhopJump(hum)
+	forceWallhopJump(hum, useVerticalBoost)
 	lockBodyRotation(hum, currentFlickSetting == "Speed Flick" and 0.54 or currentFlickSetting == "Slow Flick" and 0.70 or 0.62)
 	pcall(function() hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0) end)
 
@@ -4851,10 +4867,8 @@ local function hasValidHorizontalEdge(rayResult, params)
 	local surfaceOffset = normal * 0.08
 
 	local verticalChecks = {
-		Vector3.new(0, 0.9, 0),
-		Vector3.new(0, -0.9, 0),
-		Vector3.new(0, 1.25, 0),
-		Vector3.new(0, -1.25, 0),
+		Vector3.new(0, 0.12, 0),
+		Vector3.new(0, -0.12, 0),
 	}
 
 	local foundHorizontalEdge = false
@@ -4875,7 +4889,23 @@ local function findValidWall(hrp, params, directions)
 	local offsets = {
 		Vector3.new(0, -2.3, 0),
 		Vector3.new(0, -2.2, 0),
-		Vector3.new(0, -2.1, 0)
+		Vector3.new(0, -2.1, 0),
+		Vector3.new(0, -2.0, 0),
+		Vector3.new(0, -1.9, 0),
+		Vector3.new(0, -1.8, 0),
+		Vector3.new(0, -1.7, 0),
+		Vector3.new(0, -1.6, 0),
+		Vector3.new(0, -1.5, 0),
+		Vector3.new(0, -1.4, 0),
+		Vector3.new(0, -1.3, 0),
+		Vector3.new(0, -1.2, 0),
+		Vector3.new(0, -1.1, 0),
+		Vector3.new(0, -1.0, 0),
+		Vector3.new(0, -0.9, 0),
+		Vector3.new(0, -0.8, 0),
+		Vector3.new(0, -0.7, 0),
+		Vector3.new(0, -0.6, 0),
+		Vector3.new(0, -0.5, 0)
 	}
 
 	for _, dir in ipairs(directions) do
